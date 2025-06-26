@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>NYC Nightlife - Mobile Curator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .mobile-header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .mobile-header h1 {
+            font-size: 1.2rem;
+            color: #333;
+            text-align: center;
+        }
+
+        .quick-actions {
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .action-button {
+            background: white;
+            border: none;
+            border-radius: 16px;
+            padding: 2rem 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-icon {
+            font-size: 2rem;
+        }
+
+        .form-container {
+            background: white;
+            margin: 1rem;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: #f8f9fa;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .pill-button {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .pill-button.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .submit-button {
+            width: 100%;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .submit-button:active {
+            transform: scale(0.98);
+            background: #5a6fd8;
+        }
+
+        .submit-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload-label {
+            display: block;
+            padding: 2rem;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .file-upload-label:hover {
+            border-color: #667eea;
+            background: #e8f0fe;
+        }
+
+        .file-upload-label.has-file {
+            background: #e8f5e8;
+            border-color: #28a745;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+        }
+
+        .back-button:active {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .success-message, .error-message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .content-feed {
+            background: white;
+            margin: 1rem;
+            border-radius: 16px;
+            padding: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .content-item {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1rem;
+        }
+
+        .content-item:last-child {
+            border-bottom: none;
+        }
+
+        .venue-name {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .content-type {
+            background: #e9ecef;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .content-caption {
+            margin: 0.5rem 0;
+            color: #333;
+        }
+
+        .content-meta {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        /* Preview Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 500px;
+            margin: 2rem auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #666;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .preview-card {
+            border: 1px solid #dbdbdb;
+            border-radius: 12px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .preview-header {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            gap: 0.75rem;
+        }
+
+        .venue-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .venue-info h4 {
+            margin: 0;
+            font-size: 1rem;
+            color: #262626;
+        }
+
+        .venue-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: #8e8e8e;
+        }
+
+        .preview-media {
+            width: 100%;
+            min-height: 200px;
+            background: #f8f9fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            border-top: 1px solid #efefef;
+            border-bottom: 1px solid #efefef;
+        }
+
+        .preview-media img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .preview-content {
+            padding: 1rem;
+        }
+
+        .preview-content p {
+            margin: 0 0 0.75rem 0;
+            color: #262626;
+            line-height: 1.4;
+        }
+
+        .preview-meta {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .preview-meta span {
+            background: #f1f3f4;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #5f6368;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+
+        .cancel-btn, .confirm-btn {
+            flex: 1;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cancel-btn {
+            background: #f8f9fa;
+            color: #666;
+        }
+
+        .cancel-btn:hover {
+            background: #e9ecef;
+        }
+
+        .confirm-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .confirm-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .confirm-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        @media (max-width: 480px) {
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                margin: 1rem auto;
+            }
+            
+            .modal-footer {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="mobile-header">
+        <h1>🌃 NYC Nightlife Curator</h1>
+    </header>
+
+    <!-- Main Menu -->
+    <div id="mainMenu" class="quick-actions">
+        <button class="action-button" onclick="showForm('venue')">
+            <div class="action-icon">🏢</div>
+            <div>Add Venue</div>
+            <div style="font-size: 0.8rem; opacity: 0.7;">Quick venue entry</div>
+        </button>
+
+        <button class="action-button" onclick="showForm('post')">
+            <div class="action-icon">📸</div>
+            <div>Instagram Post</div>
+            <div style="font-size: 0.8rem; opacity: 0.7;">Regular posts</div>
+        </button>
+
+        <button class="action-button" onclick="showForm('story')">
+            <div class="action-icon">⚡</div>
+            <div>Instagram Story</div>
+            <div style="font-size: 0.8rem; opacity: 0.7;">24hr updates</div>
+        </button>
+
+        <button class="action-button" onclick="showForm('feed')">
+            <div class="action-icon">📱</div>
+            <div>View Feed</div>
+            <div style="font-size: 0.8rem; opacity: 0.7;">See all content</div>
+        </button>
+    </div>
+
+    <!-- Add Venue Form -->
+    <div id="venueForm" class="form-container">
+        <button class="back-button" onclick="showMenu()">← Back</button>
+        <h2 style="margin: 1rem 0;">Add New Venue</h2>
+
+        <div class="form-group">
+            <label class="form-label">Venue Name</label>
+            <input type="text" class="form-input" id="venueName" placeholder="Enter venue name">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Neighborhood</label>
+            <select class="form-input" id="venueNeighborhood">
+                <option value="">Select neighborhood...</option>
+                <option value="Bushwick">Bushwick</option>
+                <option value="Williamsburg">Williamsburg</option>
+                <option value="Greenpoint">Greenpoint</option>
+                <option value="LES">Lower East Side</option>
+                <option value="East Village">East Village</option>
+                <option value="West Village">West Village</option>
+                <option value="SoHo">SoHo</option>
+                <option value="Nolita">Nolita</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Venue Type</label>
+            <div class="button-group">
+                <button class="pill-button" onclick="selectOption(this, 'dance_club')">Club</button>
+                <button class="pill-button" onclick="selectOption(this, 'dive_bar')">Bar</button>
+                <button class="pill-button" onclick="selectOption(this, 'rooftop')">Rooftop</button>
+                <button class="pill-button" onclick="selectOption(this, 'cocktail_lounge')">Lounge</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Instagram Handle</label>
+            <input type="text" class="form-input" id="instagramHandle" placeholder="venue_handle (without @)">
+        </div>
+
+        <button class="submit-button" onclick="submitVenue()">Add Venue</button>
+    </div>
+
+    <!-- Instagram Post Form -->
+    <div id="postForm" class="form-container">
+        <button class="back-button" onclick="showMenu()">← Back</button>
+        <h2 style="margin: 1rem 0;">Add Instagram Post</h2>
+
+        <div class="form-group">
+            <label class="form-label">Select Venue</label>
+            <select class="form-input" id="postVenue">
+                <option>Loading venues...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Caption/Description (Optional)</label>
+            <textarea class="form-input" id="postCaption" rows="3" placeholder="What's happening? (optional)"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Crowd Level (Optional)</label>
+            <div class="button-group">
+                <button class="pill-button" onclick="selectOption(this, 'empty')">Empty</button>
+                <button class="pill-button" onclick="selectOption(this, 'moderate')">Moderate</button>
+                <button class="pill-button" onclick="selectOption(this, 'busy')">Busy</button>
+                <button class="pill-button" onclick="selectOption(this, 'packed')">Packed</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Post Image</label>
+            <div class="file-upload">
+                <input type="file" id="postPhoto" accept="image/*" capture="environment">
+                <label for="postPhoto" class="file-upload-label">
+                    📷 Upload image or screenshot
+                </label>
+            </div>
+            <div style="margin-top: 1rem;">
+                <label class="form-label">Or provide image URL</label>
+                <input type="url" class="form-input" id="postPhotoUrl" placeholder="https://example.com/image.jpg">
+            </div>
+        </div>
+
+        <button class="submit-button" onclick="previewPost()">Preview & Submit Post</button>
+    </div>
+
+    <!-- Instagram Story Form -->
+    <div id="storyForm" class="form-container">
+        <button class="back-button" onclick="showMenu()">← Back</button>
+        <h2 style="margin: 1rem 0;">Add Instagram Story</h2>
+        <p style="color: #666; margin-bottom: 1rem;">⏰ Stories expire in 24 hours</p>
+
+        <div class="form-group">
+            <label class="form-label">Select Venue</label>
+            <select class="form-input" id="storyVenue">
+                <option>Loading venues...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">What's happening right now? (Optional)</label>
+            <textarea class="form-input" id="storyCaption" rows="2" placeholder="Quick description of what you're seeing... (optional)"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Crowd Level (Optional)</label>
+            <div class="button-group">
+                <button class="pill-button" onclick="selectOption(this, 'empty')">Empty</button>
+                <button class="pill-button" onclick="selectOption(this, 'moderate')">Moderate</button>
+                <button class="pill-button" onclick="selectOption(this, 'busy')">Busy</button>
+                <button class="pill-button" onclick="selectOption(this, 'packed')">Packed</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Urgency (Optional)</label>
+            <div class="button-group">
+                <button class="pill-button" onclick="selectOption(this, 'low')">Low</button>
+                <button class="pill-button" onclick="selectOption(this, 'medium')">Medium</button>
+                <button class="pill-button" onclick="selectOption(this, 'high')">High</button>
+                <button class="pill-button" onclick="selectOption(this, 'urgent')">Urgent</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Story Image/Video</label>
+            <div class="file-upload">
+                <input type="file" id="storyFile" accept="image/*,video/*" capture="environment">
+                <label for="storyFile" class="file-upload-label">
+                    📱 Capture story content
+                </label>
+            </div>
+            <div style="margin-top: 1rem;">
+                <label class="form-label">Or provide media URL</label>
+                <input type="url" class="form-input" id="storyFileUrl" placeholder="https://example.com/video.mp4">
+            </div>
+        </div>
+
+        <button class="submit-button" onclick="previewStory()">Preview & Submit Story</button>
+    </div>
+
+    <!-- Content Feed -->
+    <div id="feedForm" class="form-container">
+        <button class="back-button" onclick="showMenu()">← Back</button>
+        <h2 style="margin: 1rem 0;">Content Feed</h2>
+        <div class="content-feed" id="contentFeed">
+            <p>Loading content...</p>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="successMessage" class="success-message"></div>
+    <div id="errorMessage" class="error-message"></div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Preview Your Post</h3>
+                <button class="close-btn" onclick="closePreview()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="preview-card">
+                    <div class="preview-header">
+                        <div class="venue-avatar" id="previewAvatar"></div>
+                        <div class="venue-info">
+                            <h4 id="previewVenueName"></h4>
+                            <p id="previewVenueInfo"></p>
+                        </div>
+                    </div>
+                    <div id="previewMedia" class="preview-media"></div>
+                    <div class="preview-content">
+                        <p id="previewCaption"></p>
+                        <div class="preview-meta">
+                            <span id="previewCrowd"></span>
+                            <span id="previewUrgency"></span>
+                            <span id="previewType"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" onclick="closePreview()">Edit</button>
+                <button class="confirm-btn" id="confirmSubmit" onclick="confirmSubmit()">Submit Post</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        let selectedOptions = {};
+        let previewData = {};
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVenues();
+        });
+
+        async function loadVenues() {
+            try {
+                const response = await fetch(`${API_BASE}/api/venues`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load venues (${response.status})`);
+                }
+                
+                const venues = await response.json();
+                
+                if (!Array.isArray(venues)) {
+                    throw new Error('Invalid venue data received');
+                }
+                
+                const selects = ['postVenue', 'storyVenue'];
+                selects.forEach(selectId => {
+                    const select = document.getElementById(selectId);
+                    if (select) {
+                        select.innerHTML = '<option value="">Select a venue...</option>';
+                        venues.forEach(venue => {
+                            if (venue && venue.id && venue.name) {
+                                const option = document.createElement('option');
+                                option.value = venue.id;
+                                option.textContent = `${venue.name} (${venue.neighborhood || 'Unknown'})`;
+                                select.appendChild(option);
+                            }
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error('Failed to load venues:', error);
+                const errorMessage = error.message || 'Failed to load venues. Please check your connection.';
+                showError(errorMessage);
+            }
+        }
+
+        async function loadContent() {
+            try {
+                const response = await fetch(`${API_BASE}/api/content`);
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to load content (${response.status})`);
+                }
+                
+                const content = await response.json();
+                
+                const feedDiv = document.getElementById('contentFeed');
+                if (!feedDiv) {
+                    console.error('Content feed element not found');
+                    return;
+                }
+                
+                if (!Array.isArray(content)) {
+                    feedDiv.innerHTML = '<p>Error: Invalid content data received</p>';
+                    console.error('Invalid content data:', content);
+                    return;
+                }
+                
+                if (content.length === 0) {
+                    feedDiv.innerHTML = '<p>No content yet. Add some posts or stories!</p>';
+                    return;
+                }
+                
+                console.log(`Loading ${content.length} content items`);
+
+                feedDiv.innerHTML = content.map(item => {
+                    if (!item) return '';
+                    
+                    const venueName = item.venue_name || 'Unknown Venue';
+                    const contentType = (item.content_type || 'post').replace('_', ' ');
+                    const caption = item.caption || '';
+                    const crowdLevel = item.crowd_level ? `Crowd: ${item.crowd_level} | ` : '';
+                    const timestamp = item.timestamp ? new Date(item.timestamp).toLocaleString() : 'Unknown time';
+                    const expires = item.expires_at ? ` | Expires: ${new Date(item.expires_at).toLocaleString()}` : '';
+                    
+                    return `
+                        <div class="content-item">
+                            <div>
+                                <span class="venue-name">${venueName}</span>
+                                <span class="content-type">${contentType}</span>
+                            </div>
+                            <div class="content-caption">${caption}</div>
+                            <div class="content-meta">
+                                ${crowdLevel}${timestamp}${expires}
+                            </div>
+                        </div>
+                    `;
+                }).filter(html => html).join('');
+            } catch (error) {
+                console.error('Failed to load content:', error);
+                const feedDiv = document.getElementById('contentFeed');
+                if (feedDiv) {
+                    feedDiv.innerHTML = '<p>Error loading content</p>';
+                }
+                const errorMessage = error.message || 'Failed to load content';
+                showError(errorMessage);
+            }
+        }
+
+        function showMenu() {
+            document.querySelectorAll('.form-container').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById('mainMenu').style.display = 'grid';
+            selectedOptions = {};
+        }
+
+        function showForm(formType) {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.querySelectorAll('.form-container').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.getElementById(formType + 'Form').classList.add('active');
+            selectedOptions = {};
+            
+            if (formType === 'feed') {
+                loadContent();
+            }
+        }
+
+        function selectOption(button, value) {
+            const group = button.parentElement;
+            if (!group) return;
+            
+            group.querySelectorAll('.pill-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            button.classList.add('selected');
+            
+            const formGroup = group.parentElement;
+            const labelElement = formGroup ? formGroup.querySelector('.form-label') : null;
+            const labelText = labelElement ? labelElement.textContent : 'Unknown';
+            
+            selectedOptions[labelText] = value;
+        }
+
+        async function submitVenue() {
+            const submitButton = document.querySelector('#venueForm .submit-button');
+            if (!submitButton) {
+                showError('Error: Submit button not found');
+                return;
+            }
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Adding Venue...';
+
+            try {
+                const formData = new FormData();
+                formData.append('name', document.getElementById('venueName').value);
+                formData.append('neighborhood', document.getElementById('venueNeighborhood').value);
+                formData.append('instagram_handle', document.getElementById('instagramHandle').value);
+                formData.append('venue_type', selectedOptions['Venue Type'] || 'bar');
+
+                const response = await fetch(`${API_BASE}/api/venues`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (parseError) {
+                    console.error('Failed to parse venue response:', parseError);
+                    throw new Error(`Server response was not valid JSON (Status: ${response.status})`);
+                }
+                
+                if (response.ok && result.id) {
+                    const successMessage = result.message || 'Venue added successfully!';
+                    showSuccess(successMessage);
+                    
+                    const venueForm = document.getElementById('venueForm');
+                    if (venueForm) {
+                        venueForm.querySelectorAll('input, select').forEach(input => input.value = '');
+                    }
+                    
+                    loadVenues(); // Refresh venue list
+                } else {
+                    const errorMsg = result.detail || result.error || result.message || 'Failed to add venue';
+                    throw new Error(`Failed to add venue (${response.status}): ${errorMsg}`);
+                }
+            } catch (error) {
+                const errorMessage = error.message || error.toString() || 'Unknown error occurred';
+                showError(`Error: ${errorMessage}`);
+                console.error('Venue submission error:', error);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Add Venue';
+            }
+        }
+
+        // Preview functions
+        function previewPost() {
+            showPreview('post', 'postVenue', 'postCaption', 'postPhoto', 'postPhotoUrl');
+        }
+
+        function previewStory() {
+            showPreview('story', 'storyVenue', 'storyCaption', 'storyFile', 'storyFileUrl');
+        }
+
+        function showPreview(contentType, venueSelectId, captionId, fileId, urlId) {
+            const venueId = document.getElementById(venueSelectId).value;
+            const caption = document.getElementById(captionId).value;
+            
+            if (!venueId) {
+                showError('Please select a venue');
+                return;
+            }
+            
+            // Caption is now optional
+
+            // Find venue data
+            const venueSelect = document.getElementById(venueSelectId);
+            const selectedOption = venueSelect.options[venueSelect.selectedIndex];
+            const venueName = selectedOption.textContent.split(' (')[0];
+            const venueNeighborhood = selectedOption.textContent.split('(')[1]?.replace(')', '') || '';
+
+            // Store preview data
+            previewData = {
+                contentType,
+                venueId,
+                venueName,
+                venueNeighborhood,
+                caption,
+                venueSelectId,
+                captionId,
+                fileId,
+                urlId
+            };
+
+            // Update preview modal
+            updatePreviewModal();
+            
+            // Show modal
+            document.getElementById('previewModal').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updatePreviewModal() {
+            const { contentType, venueName, venueNeighborhood, caption } = previewData;
+            
+            // Update venue info
+            const initial = venueName.charAt(0).toUpperCase();
+            document.getElementById('previewAvatar').textContent = initial;
+            document.getElementById('previewVenueName').textContent = venueName;
+            document.getElementById('previewVenueInfo').textContent = `${venueNeighborhood} • ${contentType === 'story' ? 'Story' : 'Post'}`;
+            
+            // Update caption
+            document.getElementById('previewCaption').textContent = caption;
+            
+            // Update media preview
+            const mediaContainer = document.getElementById('previewMedia');
+            const fileInput = document.getElementById(previewData.fileId);
+            const urlInput = document.getElementById(previewData.urlId);
+            
+            if (fileInput && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    if (file.type.startsWith('image/')) {
+                        mediaContainer.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                    } else if (file.type.startsWith('video/')) {
+                        mediaContainer.innerHTML = `<video controls style="width: 100%; max-height: 300px;"><source src="${e.target.result}" type="${file.type}"></video>`;
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else if (urlInput && urlInput.value) {
+                const url = urlInput.value;
+                if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                    mediaContainer.innerHTML = `<img src="${url}" alt="Preview" onerror="this.parentElement.innerHTML='<p>Could not load image</p>'">`;
+                } else if (url.match(/\.(mp4|mov|webm)$/i)) {
+                    mediaContainer.innerHTML = `<video controls style="width: 100%; max-height: 300px;"><source src="${url}"></video>`;
+                } else {
+                    mediaContainer.innerHTML = `<p>Media: ${url}</p>`;
+                }
+            } else {
+                mediaContainer.innerHTML = `<p>📸 No media selected</p>`;
+            }
+            
+            // Update meta info
+            const metaContainer = document.querySelector('.preview-meta');
+            let metaHTML = `<span>${contentType === 'story' ? 'Story (24h)' : 'Post'}</span>`;
+            
+            if (selectedOptions['Crowd Level']) {
+                metaHTML += `<span>🏃‍♂️ ${selectedOptions['Crowd Level']}</span>`;
+            }
+            
+            if (selectedOptions['Urgency']) {
+                metaHTML += `<span>⚡ ${selectedOptions['Urgency']}</span>`;
+            }
+            
+            metaContainer.innerHTML = metaHTML;
+            
+            // Update submit button
+            const submitBtn = document.getElementById('confirmSubmit');
+            submitBtn.textContent = contentType === 'story' ? 'Submit Story' : 'Submit Post';
+        }
+
+        function closePreview() {
+            document.getElementById('previewModal').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function confirmSubmit() {
+            closePreview();
+            const { contentType, venueSelectId, captionId, fileId, urlId } = previewData;
+            const confirmButton = document.getElementById('confirmSubmit');
+            submitContent(contentType, venueSelectId, captionId, fileId, urlId, confirmButton);
+        }
+
+        async function submitPost() {
+            await submitContent('post', 'postVenue', 'postCaption', 'postPhoto', 'postPhotoUrl');
+        }
+
+        async function submitStory() {
+            await submitContent('story', 'storyVenue', 'storyCaption', 'storyFile', 'storyFileUrl');
+        }
+
+        async function submitContent(contentType, venueSelectId, captionId, fileId, urlId, buttonElement = null) {
+            const submitButton = buttonElement || document.getElementById('confirmSubmit') || event?.target;
+            
+            if (!submitButton) {
+                console.error('No submit button found');
+                showError('Error: Could not find submit button');
+                return;
+            }
+            
+            submitButton.disabled = true;
+            const originalText = submitButton.textContent;
+            submitButton.textContent = 'Uploading...';
+
+            try {
+                const venueSelect = document.getElementById(venueSelectId);
+                const captionInput = document.getElementById(captionId);
+                
+                if (!venueSelect || !captionInput) {
+                    throw new Error('Required form elements not found');
+                }
+                
+                const venueId = venueSelect.value;
+                const caption = captionInput.value;
+                
+                if (!venueId || venueId === '') {
+                    throw new Error('Please select a venue');
+                }
+                
+                // Caption is now optional - just trim if present
+                
+                const formData = new FormData();
+                formData.append('venue_id', venueId);
+                formData.append('content_type', contentType);
+                formData.append('caption', caption ? caption.trim() : '');
+                
+                if (selectedOptions['Crowd Level']) {
+                    formData.append('crowd_level', selectedOptions['Crowd Level']);
+                }
+                if (selectedOptions['Urgency']) {
+                    formData.append('urgency', selectedOptions['Urgency']);
+                }
+
+                // Handle file upload
+                if (fileId) {
+                    const fileInput = document.getElementById(fileId);
+                    if (fileInput && fileInput.files && fileInput.files[0]) {
+                        formData.append('file', fileInput.files[0]);
+                    }
+                }
+
+                // Handle URL input
+                if (urlId) {
+                    const urlInput = document.getElementById(urlId);
+                    if (urlInput && urlInput.value) {
+                        const fileInput = document.getElementById(fileId);
+                        const hasFile = fileInput && fileInput.files && fileInput.files[0];
+                        if (!hasFile) {
+                            formData.append('file_url', urlInput.value);
+                        }
+                    }
+                }
+
+                const response = await fetch(`${API_BASE}/api/content`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                let result;
+                try {
+                    result = await response.json();
+                } catch (parseError) {
+                    console.error('Failed to parse JSON response:', parseError);
+                    throw new Error(`Server response was not valid JSON (Status: ${response.status})`);
+                }
+                
+                if (response.ok && result.id) {
+                    showSuccess(result.message);
+                    
+                    // Reset form - find the active form container
+                    const form = submitButton.closest('.form-container') || 
+                                document.querySelector('.form-container.active') ||
+                                document.getElementById(contentType + 'Form');
+                    
+                    if (form) {
+                        form.querySelectorAll('input, textarea, select').forEach(input => {
+                            if (input.type !== 'file') input.value = '';
+                        });
+                        form.querySelectorAll('.pill-button').forEach(btn => {
+                            btn.classList.remove('selected');
+                        });
+                    }
+                    
+                    // Clear selected options
+                    selectedOptions = {};
+                    
+                    // Refresh content list if on feed view
+                    if (document.getElementById('feedForm').style.display !== 'none') {
+                        loadContent();
+                    }
+                } else {
+                    const errorMsg = result.detail || result.error || result.message || 'Failed to upload content';
+                    throw new Error(`Upload failed (${response.status}): ${errorMsg}`);
+                }
+            } catch (error) {
+                console.error('Upload error caught:', error);
+                
+                let errorMessage = 'Unknown error occurred';
+                
+                if (error && error.message) {
+                    errorMessage = error.message;
+                } else if (error && typeof error.toString === 'function') {
+                    errorMessage = error.toString();
+                } else if (error) {
+                    errorMessage = String(error);
+                }
+                
+                showError(`Error: ${errorMessage}`);
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = originalText;
+            }
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+                showMenu();
+            }, 3000);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            
+            // Robust error message handling
+            let displayMessage = 'An unknown error occurred';
+            
+            if (message !== null && message !== undefined) {
+                if (typeof message === 'string' && message.trim() !== '') {
+                    displayMessage = message;
+                } else if (typeof message === 'object') {
+                    displayMessage = JSON.stringify(message);
+                } else {
+                    displayMessage = String(message);
+                }
+            }
+            
+            console.error('Error details:', { original: message, display: displayMessage });
+            
+            errorDiv.textContent = displayMessage;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 7000);
+        }
+
+        // Handle file uploads with visual feedback
+        document.querySelectorAll('input[type="file"]').forEach(input => {
+            input.addEventListener('change', function(e) {
+                const label = e.target.nextElementSibling;
+                if (e.target.files.length > 0) {
+                    const file = e.target.files[0];
+                    label.textContent = `✅ ${file.name}`;
+                    label.classList.add('has-file');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

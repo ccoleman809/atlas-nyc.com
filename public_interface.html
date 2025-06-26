@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Nightlife Magazine</title>
+    
+    <!-- Browser compatibility polyfills -->
+    <script>
+        // Polyfill for older browsers
+        if (!window.fetch) {
+            console.warn('Fetch API not supported. Please use a modern browser.');
+        }
+        
+        // Console compatibility
+        if (!window.console) {
+            window.console = {
+                log: function() {},
+                error: function() {},
+                warn: function() {}
+            };
+        }
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #fafafa;
+            color: #262626;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: #fff;
+            border-bottom: 1px solid #dbdbdb;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: -2px;
+            color: #000;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* Stories Section */
+        .stories-container {
+            background: #fff;
+            padding: 20px 0;
+            border-bottom: 1px solid #dbdbdb;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .stories-container::-webkit-scrollbar {
+            display: none;
+        }
+
+        .stories-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .stories-scroll {
+            display: flex;
+            gap: 15px;
+            padding: 10px 0;
+        }
+
+        .story-item {
+            flex-shrink: 0;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .story-item:hover {
+            transform: scale(1.05);
+        }
+
+        .story-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            padding: 3px;
+            margin-bottom: 8px;
+        }
+
+        .story-image {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+        }
+
+        .story-venue {
+            font-size: 12px;
+            color: #262626;
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Search Section */
+        .search-section {
+            background: #fff;
+            padding: 30px 0;
+            border-bottom: 1px solid #dbdbdb;
+        }
+
+        .search-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            padding: 12px 20px;
+            border: 2px solid #dbdbdb;
+            border-radius: 25px;
+            font-size: 16px;
+            min-width: 300px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #000;
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: #000;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .search-btn:hover {
+            background: #333;
+        }
+
+        /* Map Section */
+        .map-section {
+            background: #fff;
+            padding: 40px 0;
+            border-bottom: 1px solid #dbdbdb;
+        }
+
+        .map-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .map-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .map-header h2 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #262626;
+        }
+
+        .map-header p {
+            color: #8e8e8e;
+            font-size: 16px;
+        }
+
+        #map {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            padding: 8px 20px;
+            border: 1px solid #dbdbdb;
+            background: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .filter-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .filter-btn.active {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+        }
+
+        /* Posts Grid */
+        .posts-grid {
+            /* Fallback for older browsers */
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            
+            /* Modern browsers with CSS Grid support */
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 40px;
+        }
+        
+        /* Fallback for flexbox layout */
+        .posts-grid .post-card {
+            flex: 0 1 350px;
+            margin-bottom: 40px;
+        }
+
+        .post-card {
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .post-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .post-media {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            cursor: pointer;
+        }
+
+        .post-content {
+            padding: 20px;
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .venue-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #833ab4, #fd1d1d);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .venue-info h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .venue-neighborhood {
+            font-size: 12px;
+            color: #8e8e8e;
+        }
+
+        .post-caption {
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .post-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #8e8e8e;
+        }
+
+        .crowd-level {
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-weight: 500;
+        }
+
+        .crowd-empty { background: #e8f5e9; color: #2e7d32; }
+        .crowd-moderate { background: #fff3e0; color: #f57c00; }
+        .crowd-busy { background: #fce4ec; color: #c2185b; }
+        .crowd-packed { background: #f3e5f5; color: #7b1fa2; }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #8e8e8e;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #8e8e8e;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: #262626;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            cursor: pointer;
+        }
+
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        .modal-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: #fff;
+            font-size: 40px;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .close-modal:hover {
+            opacity: 0.7;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .posts-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .post-media {
+                height: 300px;
+            }
+
+            .filter-bar {
+                justify-content: flex-start;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                padding-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1 class="logo">NYC Nightlife</h1>
+                <p class="tagline">The pulse of the city, one story at a time</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Stories Section -->
+    <div class="stories-container">
+        <div class="stories-wrapper">
+            <div class="stories-scroll" id="storiesContainer">
+                <!-- Stories will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+        <div class="search-wrapper">
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search venues, neighborhoods, or vibes..." />
+                <button onclick="performSearch()" class="search-btn">Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="map-section">
+        <div class="map-wrapper">
+            <div class="map-header">
+                <h2>Explore NYC Nightlife</h2>
+                <p>Discover venues across all five boroughs</p>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="dance_club">Dance Clubs</button>
+            <button class="filter-btn" data-filter="dive_bar">Dive Bars</button>
+            <button class="filter-btn" data-filter="cocktail_lounge">Cocktail Lounges</button>
+            <button class="filter-btn" data-filter="rooftop">Rooftops</button>
+        </div>
+
+        <!-- Posts Grid -->
+        <div class="posts-grid" id="postsContainer">
+            <div class="loading">Loading nightlife updates...</div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="imageModal">
+        <span class="close-modal">&times;</span>
+        <div class="modal-content">
+            <img class="modal-image" id="modalImage" alt="">
+        </div>
+    </div>
+
+    <script>
+        // API base URL
+        var API_URL = 'http://localhost:8001';
+
+        // State
+        var allPosts = [];
+        var allStories = [];
+        var venues = {};
+        var currentFilter = 'all';
+        var map = null;
+        var markers = [];
+        var searchResults = [];
+
+        // Browser compatibility helper
+        function makeRequest(url) {
+            // Modern browsers
+            if (window.fetch) {
+                return fetch(url).then(function(response) {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                });
+            }
+            
+            // Fallback for older browsers
+            return new Promise(function(resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url);
+                xhr.onload = function() {
+                    if (xhr.status === 200) {
+                        try {
+                            resolve(JSON.parse(xhr.responseText));
+                        } catch (e) {
+                            reject(new Error('Invalid JSON response'));
+                        }
+                    } else {
+                        reject(new Error('Request failed: ' + xhr.status));
+                    }
+                };
+                xhr.onerror = function() {
+                    reject(new Error('Network error'));
+                };
+                xhr.send();
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGoogleMaps();
+            loadVenues();
+            loadStories();
+            loadPosts();
+            setupEventListeners();
+        });
+
+        // Load Google Maps
+        function loadGoogleMaps() {
+            // First get the API key from the backend
+            makeRequest(API_URL + '/api/config')
+                .then(function(config) {
+                    if (config.google_maps_api_key) {
+                        var script = document.createElement('script');
+                        script.src = 'https://maps.googleapis.com/maps/api/js?key=' + config.google_maps_api_key + '&callback=initMap';
+                        script.async = true;
+                        script.defer = true;
+                        document.head.appendChild(script);
+                    } else {
+                        console.warn('Google Maps API key not configured');
+                        document.getElementById('map').innerHTML = '<div style="padding: 50px; text-align: center; color: #666;"><h3>Map Unavailable</h3><p>Google Maps API key not configured</p></div>';
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error loading config:', error);
+                    document.getElementById('map').innerHTML = '<div style="padding: 50px; text-align: center; color: #666;"><h3>Map Unavailable</h3><p>Unable to load map configuration</p></div>';
+                });
+        }
+
+        // Initialize map
+        function initMap() {
+            // Center on Manhattan
+            var nycCenter = { lat: 40.7589, lng: -73.9851 };
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: nycCenter,
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    },
+                    {
+                        featureType: 'transit',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+            
+            // Load venue markers when venues are loaded
+            if (Object.keys(venues).length > 0) {
+                addVenueMarkers();
+            }
+        }
+
+        // Add venue markers to map
+        function addVenueMarkers() {
+            // Clear existing markers
+            for (var i = 0; i < markers.length; i++) {
+                markers[i].setMap(null);
+            }
+            markers = [];
+            
+            // Add markers for each venue
+            for (var venueId in venues) {
+                var venue = venues[venueId];
+                if (venue.address) {
+                    // Use geocoding service or predefined coordinates
+                    // For demo purposes, we'll use approximate NYC coordinates
+                    var lat = 40.7589 + (Math.random() - 0.5) * 0.1;
+                    var lng = -73.9851 + (Math.random() - 0.5) * 0.1;
+                    
+                    var marker = new google.maps.Marker({
+                        position: { lat: lat, lng: lng },
+                        map: map,
+                        title: venue.name,
+                        icon: {
+                            url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="12" fill="#000" stroke="#fff" stroke-width="2"/><text x="16" y="21" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">🍸</text></svg>'),
+                            scaledSize: new google.maps.Size(32, 32)
+                        }
+                    });
+                    
+                    // Add info window
+                    var infoWindow = new google.maps.InfoWindow({
+                        content: '<div style="padding: 10px;"><h3>' + venue.name + '</h3><p>' + venue.neighborhood + '</p><p>' + (venue.description || '') + '</p></div>'
+                    });
+                    
+                    marker.addListener('click', function() {
+                        infoWindow.open(map, marker);
+                    });
+                    
+                    markers.push(marker);
+                }
+            }
+        }
+
+        // Search functionality
+        function performSearch() {
+            var query = document.getElementById('searchInput').value.trim().toLowerCase();
+            if (!query) {
+                renderPosts(); // Show all posts
+                return;
+            }
+            
+            // Search in venues and posts
+            var matchingVenueIds = [];
+            for (var venueId in venues) {
+                var venue = venues[venueId];
+                if (venue.name.toLowerCase().indexOf(query) !== -1 ||
+                    venue.neighborhood.toLowerCase().indexOf(query) !== -1 ||
+                    (venue.venue_type && venue.venue_type.toLowerCase().indexOf(query) !== -1) ||
+                    (venue.description && venue.description.toLowerCase().indexOf(query) !== -1)) {
+                    matchingVenueIds.push(venueId);
+                }
+            }
+            
+            // Filter posts by matching venues or caption content
+            searchResults = [];
+            for (var i = 0; i < allPosts.length; i++) {
+                var post = allPosts[i];
+                if (matchingVenueIds.indexOf(post.venue_id.toString()) !== -1 ||
+                    (post.caption && post.caption.toLowerCase().indexOf(query) !== -1)) {
+                    searchResults.push(post);
+                }
+            }
+            
+            renderSearchResults();
+        }
+
+        // Render search results
+        function renderSearchResults() {
+            var container = document.getElementById('postsContainer');
+            
+            if (searchResults.length === 0) {
+                container.innerHTML = '<div class="empty-state"><h2>No results found</h2><p>Try a different search term</p></div>';
+                return;
+            }
+            
+            var postsHTML = '';
+            for (var i = 0; i < searchResults.length; i++) {
+                var post = searchResults[i];
+                var venue = venues[post.venue_id] || { 
+                    name: post.venue_name, 
+                    neighborhood: post.neighborhood,
+                    instagram_handle: post.instagram_handle,
+                    venue_type: 'bar'
+                };
+                var initial = venue.name.charAt(0).toUpperCase();
+                var timeAgo = getTimeAgo(new Date(post.timestamp));
+                
+                var mediaContent = '';
+                if (post.media_url) {
+                    var mediaUrl = getMediaUrl(post.media_url);
+                    mediaContent = '<img src="' + mediaUrl + '" alt="' + venue.name + '" class="post-media" onclick="openModal(\'' + mediaUrl + '\')">'
+                } else {
+                    mediaContent = '<div class="post-media" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">' + initial + '</div>';
+                }
+                
+                var crowdLevelSpan = '';
+                if (post.crowd_level) {
+                    crowdLevelSpan = '<span class="crowd-level crowd-' + post.crowd_level + '">' + formatCrowdLevel(post.crowd_level) + '</span>';
+                }
+                
+                postsHTML += '<div class="post-card">' +
+                    mediaContent +
+                    '<div class="post-content">' +
+                        '<div class="post-header">' +
+                            '<div class="venue-avatar">' + initial + '</div>' +
+                            '<div class="venue-info">' +
+                                '<h3>' + venue.name + '</h3>' +
+                                '<p class="venue-neighborhood">' + venue.neighborhood + ' • @' + venue.instagram_handle + '</p>' +
+                            '</div>' +
+                        '</div>' +
+                        '<p class="post-caption">' + post.caption + '</p>' +
+                        '<div class="post-meta">' +
+                            '<span>' + timeAgo + '</span>' +
+                            crowdLevelSpan +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = postsHTML;
+        }
+
+        // Load venues
+        function loadVenues() {
+            makeRequest(API_URL + '/api/venues')
+                .then(function(data) {
+                    for (var i = 0; i < data.length; i++) {
+                        venues[data[i].id] = data[i];
+                    }
+                    // Add markers to map if map is ready
+                    if (map) {
+                        addVenueMarkers();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error loading venues:', error);
+                });
+        }
+
+        // Load stories
+        function loadStories() {
+            makeRequest(API_URL + '/api/content/stories')
+                .then(function(data) {
+                    console.log('Stories loaded:', data.length, 'stories');
+                    allStories = data || [];
+                    console.log('First few stories:', allStories.slice(0, 3));
+                    // Look for video stories and story ID 30
+                    for (var i = 0; i < allStories.length; i++) {
+                        if (allStories[i].id === 30) {
+                            console.log('Found story ID 30:', allStories[i]);
+                        }
+                        if (allStories[i].media_url && allStories[i].media_url.toLowerCase().indexOf('mp4') !== -1) {
+                            console.log('Found video story:', allStories[i]);
+                        }
+                    }
+                    renderStories();
+                })
+                .catch(function(error) {
+                    console.error('Error loading stories:', error);
+                });
+        }
+
+        // Load posts
+        function loadPosts() {
+            makeRequest(API_URL + '/api/content')
+                .then(function(data) {
+                    allPosts = [];
+                    for (var i = 0; i < data.length; i++) {
+                        if (data[i].content_type === 'post') {
+                            allPosts.push(data[i]);
+                        }
+                    }
+                    renderPosts();
+                })
+                .catch(function(error) {
+                    console.error('Error loading posts:', error);
+                    document.getElementById('postsContainer').innerHTML = '<div class="empty-state"><h2>Unable to load posts</h2><p>Please try again later</p></div>';
+                });
+        }
+
+        // Render stories
+        function renderStories() {
+            const container = document.getElementById('storiesContainer');
+            
+            if (allStories.length === 0) {
+                container.innerHTML = '<p style="color: #8e8e8e; padding: 20px;">No active stories</p>';
+                return;
+            }
+
+            var storyHTML = '';
+            for (var i = 0; i < allStories.length; i++) {
+                var story = allStories[i];
+                var venue = venues[story.venue_id] || { 
+                    name: story.venue_name, 
+                    neighborhood: story.neighborhood,
+                    instagram_handle: story.instagram_handle 
+                };
+                var initial = venue.name.charAt(0).toUpperCase();
+                
+                var mediaContent = '';
+                if (story.media_url) {
+                    mediaContent = '<img src="' + getMediaUrl(story.media_url) + '" alt="' + venue.name + '" class="story-image">';
+                } else {
+                    mediaContent = '<div class="story-image" style="background: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold;">' + initial + '</div>';
+                }
+                
+                storyHTML += '<div class="story-item" onclick="openStory(' + story.id + ');">' +
+                    '<div class="story-circle">' + mediaContent + '</div>' +
+                    '<p class="story-venue">' + venue.name + '</p>' +
+                    '</div>';
+            }
+            container.innerHTML = storyHTML;
+        }
+
+        // Render posts
+        function renderPosts() {
+            const container = document.getElementById('postsContainer');
+            
+            var filteredPosts = [];
+            if (currentFilter === 'all') {
+                filteredPosts = allPosts;
+            } else {
+                for (var i = 0; i < allPosts.length; i++) {
+                    var post = allPosts[i];
+                    var venue = venues[post.venue_id];
+                    if (venue && venue.venue_type === currentFilter) {
+                        filteredPosts.push(post);
+                    }
+                }
+            }
+
+            if (filteredPosts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>No posts found</h2>
+                        <p>Check back later for updates from NYC's nightlife scene</p>
+                    </div>
+                `;
+                return;
+            }
+
+            var postsHTML = '';
+            for (var i = 0; i < filteredPosts.length; i++) {
+                var post = filteredPosts[i];
+                var venue = venues[post.venue_id] || { 
+                    name: post.venue_name, 
+                    neighborhood: post.neighborhood,
+                    instagram_handle: post.instagram_handle,
+                    venue_type: 'bar'
+                };
+                var initial = venue.name.charAt(0).toUpperCase();
+                var timeAgo = getTimeAgo(new Date(post.timestamp));
+                
+                var mediaContent = '';
+                if (post.media_url) {
+                    var mediaUrl = getMediaUrl(post.media_url);
+                    mediaContent = '<img src="' + mediaUrl + '" alt="' + venue.name + '" class="post-media" onclick="openModal(\'' + mediaUrl + '\')">';
+                } else {
+                    mediaContent = '<div class="post-media" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">' + initial + '</div>';
+                }
+                
+                var crowdLevelSpan = '';
+                if (post.crowd_level) {
+                    crowdLevelSpan = '<span class="crowd-level crowd-' + post.crowd_level + '">' + formatCrowdLevel(post.crowd_level) + '</span>';
+                }
+                
+                postsHTML += '<div class="post-card">' +
+                    mediaContent +
+                    '<div class="post-content">' +
+                        '<div class="post-header">' +
+                            '<div class="venue-avatar">' + initial + '</div>' +
+                            '<div class="venue-info">' +
+                                '<h3>' + venue.name + '</h3>' +
+                                '<p class="venue-neighborhood">' + venue.neighborhood + ' • @' + venue.instagram_handle + '</p>' +
+                            '</div>' +
+                        '</div>' +
+                        '<p class="post-caption">' + post.caption + '</p>' +
+                        '<div class="post-meta">' +
+                            '<span>' + timeAgo + '</span>' +
+                            crowdLevelSpan +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = postsHTML;
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Filter buttons
+            var filterButtons = document.querySelectorAll('.filter-btn');
+            for (var i = 0; i < filterButtons.length; i++) {
+                filterButtons[i].addEventListener('click', function() {
+                    var allButtons = document.querySelectorAll('.filter-btn');
+                    for (var j = 0; j < allButtons.length; j++) {
+                        allButtons[j].classList.remove('active');
+                    }
+                    this.classList.add('active');
+                    currentFilter = this.dataset.filter;
+                    renderPosts();
+                });
+            }
+
+            // Modal
+            var modal = document.getElementById('imageModal');
+            modal.addEventListener('click', function() {
+                closeModal();
+            });
+            
+            // Search input enter key
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+        }
+
+        // Open modal for media (image or video)
+        function openModal(mediaSrc) {
+            console.log('openModal called with:', mediaSrc);
+            var modal = document.getElementById('imageModal');
+            var modalContent = document.getElementById('modalImage').parentElement;
+            
+            // Check if it's a video URL
+            var isVideo = false;
+            if (mediaSrc) {
+                var lowerSrc = mediaSrc.toLowerCase();
+                isVideo = lowerSrc.indexOf('.mp4') !== -1 || 
+                         lowerSrc.indexOf('.mov') !== -1 || 
+                         lowerSrc.indexOf('.webm') !== -1 || 
+                         lowerSrc.indexOf('.avi') !== -1;
+            }
+            
+            console.log('Is video:', isVideo, 'URL:', mediaSrc);
+            
+            if (isVideo) {
+                console.log('Creating video modal');
+                modalContent.innerHTML = '<span class="close" onclick="closeModal()">&times;</span>' +
+                    '<video controls style="max-width: 100%; max-height: 90vh;" autoplay>' +
+                        '<source src="' + mediaSrc + '" type="video/mp4">' +
+                        'Your browser does not support the video tag.' +
+                    '</video>';
+            } else {
+                console.log('Creating image modal');
+                modalContent.innerHTML = '<span class="close" onclick="closeModal()">&times;</span>' +
+                    '<img id="modalImage" src="' + mediaSrc + '" style="max-width: 100%; max-height: 90vh;">';
+            }
+            
+            modal.style.display = 'block';
+            console.log('Modal display set to block');
+        }
+        
+        // Close modal
+        function closeModal() {
+            var modal = document.getElementById('imageModal');
+            
+            // Stop any playing videos
+            var videos = modal.querySelectorAll('video');
+            for (var i = 0; i < videos.length; i++) {
+                videos[i].pause();
+                videos[i].currentTime = 0;
+            }
+            
+            modal.style.display = 'none';
+        }
+
+        // Open story (for now, just show the image)
+        function openStory(storyId) {
+            console.log('openStory called with ID:', storyId, 'Type:', typeof storyId);
+            
+            var storyIds = [];
+            for (var i = 0; i < allStories.length; i++) {
+                storyIds.push(allStories[i].id);
+            }
+            console.log('Available stories:', storyIds);
+            console.log('Looking for story ID:', storyId, 'parsed as:', parseInt(storyId));
+            
+            var story = null;
+            for (var i = 0; i < allStories.length; i++) {
+                console.log('Checking story ID:', allStories[i].id, 'type:', typeof allStories[i].id);
+                if (allStories[i].id === parseInt(storyId)) {
+                    story = allStories[i];
+                    console.log('Found matching story:', story);
+                    break;
+                }
+            }
+            
+            if (!story) {
+                console.error('Story not found:', storyId);
+                console.error('Available story IDs:', storyIds);
+                return;
+            }
+            
+            console.log('Opening story:', story);
+            console.log('Story media_url value:', story.media_url);
+            console.log('Story media_url type:', typeof story.media_url);
+            console.log('Story media_url truthy?', !!story.media_url);
+            
+            if (story.media_url) {
+                console.log('Story has media:', story.media_url);
+                var processedUrl = getMediaUrl(story.media_url);
+                console.log('Processed URL:', processedUrl);
+                openModal(processedUrl);
+            } else {
+                console.log('Story has no media, showing text modal');
+                console.log('All story properties:', Object.keys(story));
+                showStoryModal(story);
+            }
+        }
+        
+        // Show story modal for stories without media
+        function showStoryModal(story) {
+            console.log('showStoryModal called with story:', story);
+            var venue = venues[story.venue_id] || { 
+                name: story.venue_name, 
+                neighborhood: story.neighborhood,
+                instagram_handle: story.instagram_handle 
+            };
+            console.log('Venue data:', venue);
+            
+            // Remove any existing modal first
+            var existingModal = document.getElementById('storyModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+            
+            // Create new story modal
+            var storyModal = document.createElement('div');
+            storyModal.id = 'storyModal';
+            storyModal.className = 'modal';
+            
+            // Set styles
+            storyModal.style.position = 'fixed';
+            storyModal.style.zIndex = '1000';
+            storyModal.style.left = '0';
+            storyModal.style.top = '0';
+            storyModal.style.width = '100%';
+            storyModal.style.height = '100%';
+            storyModal.style.backgroundColor = 'rgba(0,0,0,0.8)';
+            storyModal.style.padding = '20px';
+            storyModal.style.boxSizing = 'border-box';
+            storyModal.style.display = 'block'; // Set to block immediately
+            
+            var captionContent = '';
+            if (story.caption) {
+                captionContent = '<p style="font-size: 16px; line-height: 1.5; margin-bottom: 15px;">"' + story.caption + '"</p>';
+            } else {
+                captionContent = '<p style="color: #999;">No caption provided</p>';
+            }
+            
+            var crowdContent = '';
+            if (story.crowd_level) {
+                crowdContent = '<p style="color: #888;"><strong>Crowd Level:</strong> ' + formatCrowdLevel(story.crowd_level) + '</p>';
+            }
+            
+            var urgencyContent = '';
+            if (story.urgency) {
+                urgencyContent = '<p style="color: #888;"><strong>Urgency:</strong> ' + story.urgency + '</p>';
+            }
+            
+            storyModal.innerHTML = '<div style="background: white; max-width: 500px; margin: 50px auto; padding: 30px; border-radius: 10px; position: relative;" onclick="event.stopPropagation();">' +
+                '<span style="position: absolute; top: 10px; right: 20px; font-size: 30px; cursor: pointer;" onclick="closeStoryModal()">&times;</span>' +
+                '<div id="storyModalContent">' +
+                    '<h2 style="margin-bottom: 20px; color: #333;">' + venue.name + '</h2>' +
+                    '<p style="color: #666; margin-bottom: 15px;">' + venue.neighborhood + '</p>' +
+                    captionContent +
+                    crowdContent +
+                    urgencyContent +
+                    '<p style="color: #aaa; font-size: 14px; margin-top: 20px;">' + getTimeAgo(story.timestamp) + '</p>' +
+                '</div>' +
+            '</div>';
+            
+            // Close modal when clicking outside
+            storyModal.onclick = function(e) {
+                if (e.target === storyModal) {
+                    closeStoryModal();
+                }
+            };
+            
+            // Append to body
+            document.body.appendChild(storyModal);
+            
+            console.log('Story modal appended to body with display:', storyModal.style.display);
+        }
+        
+        // Close story modal
+        function closeStoryModal() {
+            var modal = document.getElementById('storyModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        // Format crowd level
+        function formatCrowdLevel(level) {
+            var levels = {
+                'empty': 'Empty',
+                'moderate': 'Moderate',
+                'busy': 'Busy',
+                'packed': 'Packed'
+            };
+            return levels[level] || level;
+        }
+
+        // Get media URL (handle both local uploads and external URLs)
+        function getMediaUrl(media_url) {
+            if (!media_url) return null;
+            
+            // If it's already a full URL (starts with http/https), use it directly
+            if (media_url.indexOf('http://') === 0 || media_url.indexOf('https://') === 0) {
+                return media_url;
+            }
+            
+            // Handle API bug where /uploads/ is added to external URLs
+            if (media_url.indexOf('/uploads/http') === 0) {
+                return media_url.replace('/uploads/', '');
+            }
+            
+            // Otherwise, it's a local upload
+            return API_URL + media_url;
+        }
+
+        // Get time ago
+        function getTimeAgo(date) {
+            var seconds = Math.floor((new Date() - date) / 1000);
+            
+            var interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + ' years ago';
+            
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + ' months ago';
+            
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + ' days ago';
+            
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + ' hours ago';
+            
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + ' minutes ago';
+            
+            return Math.floor(seconds) + ' seconds ago';
+        }
+
+        // Auto-refresh
+        setInterval(function() {
+            loadStories();
+            loadPosts();
+        }, 60000); // Refresh every minute
+    </script>
+</body>
+</html>

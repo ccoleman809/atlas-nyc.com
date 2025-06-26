@@ -1,0 +1,5 @@
+2025-06-13 16:59:42,274 - test - ERROR - <string>:13 - Test error message
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:37 - Database error caught: Database operation failed: SELECT
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:48 - Auth error caught: Authentication failed
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:59 - Rate limit error caught: Rate limit exceeded: 100 requests per 60 seconds
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:74 - Unhandled exception [061489f8]: division by zero

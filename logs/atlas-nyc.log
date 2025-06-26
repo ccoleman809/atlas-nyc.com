@@ -1,0 +1,58 @@
+2025-06-13 16:59:42,274 - logging_config - INFO - logging_config.py:69 - Atlas-NYC logging initialized - Level: INFO
+2025-06-13 16:59:42,274 - logging_config - INFO - logging_config.py:70 - Environment: development
+2025-06-13 16:59:42,274 - logging_config - INFO - logging_config.py:71 - Log file: logs/atlas-nyc.log
+2025-06-13 16:59:42,274 - test - INFO - <string>:11 - Test info message
+2025-06-13 16:59:42,274 - test - WARNING - <string>:12 - Test warning message
+2025-06-13 16:59:42,274 - test - ERROR - <string>:13 - Test error message
+2025-06-13 17:09:35,541 - logging_config - INFO - logging_config.py:69 - Atlas-NYC logging initialized - Level: INFO
+2025-06-13 17:09:35,541 - logging_config - INFO - logging_config.py:70 - Environment: development
+2025-06-13 17:09:35,541 - logging_config - INFO - logging_config.py:71 - Log file: logs/atlas-nyc.log
+2025-06-13 17:09:35,691 - errors - INFO - error_handlers.py:346 - Error handlers registered successfully
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:270 - ==================================================
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:271 - Atlas-NYC Starting Up
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:272 - ==================================================
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:273 - Environment: development
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:274 - Debug Mode: True
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:275 - Base URL: http://localhost:8001
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:276 - Database: nightlife.db
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:277 - Analytics: Enabled
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:278 - Workers: 1
+2025-06-13 17:09:35,691 - startup - INFO - logging_config.py:279 - ==================================================
+2025-06-13 17:13:36,492 - logging_config - INFO - logging_config.py:69 - Atlas-NYC logging initialized - Level: INFO
+2025-06-13 17:13:36,492 - logging_config - INFO - logging_config.py:70 - Environment: development
+2025-06-13 17:13:36,492 - logging_config - INFO - logging_config.py:71 - Log file: logs/atlas-nyc.log
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:37 - Database error caught: Database operation failed: SELECT
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:48 - Auth error caught: Authentication failed
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:59 - Rate limit error caught: Rate limit exceeded: 100 requests per 60 seconds
+2025-06-13 17:13:36,493 - errors - ERROR - test_error_logging.py:74 - Unhandled exception [061489f8]: division by zero
+2025-06-13 17:13:36,493 - security - WARNING - logging_config.py:159 - Security Event: unauthorized_access | IP: 192.168.1.100 | User-Agent: Mozilla/5.0 (Suspicious Bot)
+2025-06-13 17:13:36,493 - security - WARNING - logging_config.py:175 - Authentication FAILED: admin from 192.168.1.100
+2025-06-13 17:13:36,494 - security - WARNING - logging_config.py:182 - Rate limit exceeded: 192.168.1.100 on /api/venues
+2025-06-13 17:15:59,707 - logging_config - INFO - logging_config.py:69 - Atlas-NYC logging initialized - Level: INFO
+2025-06-13 17:15:59,707 - logging_config - INFO - logging_config.py:70 - Environment: development
+2025-06-13 17:15:59,707 - logging_config - INFO - logging_config.py:71 - Log file: logs/atlas-nyc.log
+2025-06-13 17:15:59,824 - errors - INFO - error_handlers.py:346 - Error handlers registered successfully
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:270 - ==================================================
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:271 - Atlas-NYC Starting Up
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:272 - ==================================================
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:273 - Environment: development
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:274 - Debug Mode: True
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:275 - Base URL: http://localhost:8001
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:276 - Database: nightlife.db
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:277 - Analytics: Enabled
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:278 - Workers: 1
+2025-06-13 17:15:59,824 - startup - INFO - logging_config.py:279 - ==================================================
+2025-06-26 13:09:13,062 - logging_config - INFO - logging_config.py:69 - Atlas-NYC logging initialized - Level: INFO
+2025-06-26 13:09:13,063 - logging_config - INFO - logging_config.py:70 - Environment: development
+2025-06-26 13:09:13,063 - logging_config - INFO - logging_config.py:71 - Log file: logs/atlas-nyc.log
+2025-06-26 13:09:13,289 - errors - INFO - error_handlers.py:346 - Error handlers registered successfully
+2025-06-26 13:09:13,289 - startup - INFO - logging_config.py:270 - ==================================================
+2025-06-26 13:09:13,289 - startup - INFO - logging_config.py:271 - Atlas-NYC Starting Up
+2025-06-26 13:09:13,289 - startup - INFO - logging_config.py:272 - ==================================================
+2025-06-26 13:09:13,289 - startup - INFO - logging_config.py:273 - Environment: development
+2025-06-26 13:09:13,289 - startup - INFO - logging_config.py:274 - Debug Mode: True
+2025-06-26 13:09:13,289 - startup - INFO - logging_config.py:275 - Base URL: http://localhost:8001
+2025-06-26 13:09:13,290 - startup - INFO - logging_config.py:276 - Database: nightlife.db
+2025-06-26 13:09:13,290 - startup - INFO - logging_config.py:277 - Analytics: Enabled
+2025-06-26 13:09:13,290 - startup - INFO - logging_config.py:278 - Workers: 1
+2025-06-26 13:09:13,290 - startup - INFO - logging_config.py:279 - ==================================================

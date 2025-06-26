@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Nightlife Admin Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; }
+        
+        .header {
+            background: #1a1a1a;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+        
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .venue-item, .content-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .venue-item:last-child, .content-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-info h4 {
+            margin-bottom: 0.25rem;
+        }
+        
+        .item-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .audit-log {
+            font-size: 0.9rem;
+        }
+        
+        .audit-log table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .audit-log th, .audit-log td {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .audit-log th {
+            font-weight: 600;
+            background: #f8f9fa;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>NYC Nightlife Admin</h1>
+        <div>
+            <span id="username"></span>
+            <button class="btn btn-danger" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('venues')">Venues</button>
+            <button class="tab" onclick="switchTab('content')">Content</button>
+            <button class="tab" onclick="switchTab('analytics')">Analytics</button>
+            <button class="tab" onclick="switchTab('audit')">Audit Log</button>
+        </div>
+
+        <div id="alert-container"></div>
+
+        <!-- Venues Section -->
+        <div id="venues-section" class="content-section active">
+            <div class="card">
+                <h3>Add New Venue</h3>
+                <form id="venue-form">
+                    <div class="form-group">
+                        <label>Name *</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Neighborhood *</label>
+                        <input type="text" name="neighborhood" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Venue Type *</label>
+                        <select name="venue_type" required>
+                            <option value="">Select type</option>
+                            <option value="bar">Bar</option>
+                            <option value="club">Club</option>
+                            <option value="lounge">Lounge</option>
+                            <option value="restaurant">Restaurant</option>
+                            <option value="rooftop">Rooftop</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Instagram Handle</label>
+                        <input type="text" name="instagram_handle" placeholder="@username">
+                    </div>
+                    <div class="form-group">
+                        <label>Address</label>
+                        <input type="text" name="address">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Busy Nights</label>
+                        <input type="text" name="busy_nights" placeholder="e.g., Friday, Saturday">
+                    </div>
+                    <div class="form-group">
+                        <label>Price Range</label>
+                        <select name="price_range">
+                            <option value="">Select range</option>
+                            <option value="$">$</option>
+                            <option value="$$">$$</option>
+                            <option value="$$$">$$$</option>
+                            <option value="$$$$">$$$$</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Photo</label>
+                        <input type="file" name="photo" accept="image/*">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Venue</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Existing Venues</h3>
+                <div id="venues-list" class="loading">Loading venues...</div>
+            </div>
+        </div>
+
+        <!-- Content Section -->
+        <div id="content-section" class="content-section">
+            <div class="card">
+                <h3>Add New Content</h3>
+                <form id="content-form">
+                    <div class="form-group">
+                        <label>Venue *</label>
+                        <select name="venue_id" required>
+                            <option value="">Select venue</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Content Type *</label>
+                        <select name="content_type" required>
+                            <option value="">Select type</option>
+                            <option value="post">Post</option>
+                            <option value="story">Story (24hr)</option>
+                            <option value="reel">Reel</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Media File *</label>
+                        <input type="file" name="file" accept="image/*,video/*" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Caption</label>
+                        <textarea name="caption" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Crowd Level</label>
+                        <select name="crowd_level">
+                            <option value="">Select level</option>
+                            <option value="empty">Empty</option>
+                            <option value="moderate">Moderate</option>
+                            <option value="busy">Busy</option>
+                            <option value="packed">Packed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Urgency</label>
+                        <input type="text" name="urgency" placeholder="e.g., Limited time offer">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Content</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Existing Content</h3>
+                <div id="content-list" class="loading">Loading content...</div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div id="analytics-section" class="content-section">
+            <!-- Real-time Stats -->
+            <div class="card">
+                <h3>Real-time Overview</h3>
+                <div id="realtime-stats" class="loading">Loading real-time data...</div>
+            </div>
+
+            <!-- Global Analytics -->
+            <div class="card">
+                <h3>Platform Analytics</h3>
+                <div style="margin-bottom: 1rem;">
+                    <label>Time Period:</label>
+                    <select id="analytics-period" onchange="loadGlobalAnalytics()">
+                        <option value="7">Last 7 days</option>
+                        <option value="30" selected>Last 30 days</option>
+                        <option value="90">Last 90 days</option>
+                    </select>
+                </div>
+                <div id="global-analytics" class="loading">Loading analytics...</div>
+            </div>
+
+            <!-- Top Venues -->
+            <div class="card">
+                <h3>Top Performing Venues</h3>
+                <div id="top-venues-analytics" class="loading">Loading venue analytics...</div>
+            </div>
+
+            <!-- Analytics Charts -->
+            <div class="card">
+                <h3>Activity Charts</h3>
+                <canvas id="analytics-chart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Export Options -->
+            <div class="card">
+                <h3>Export Analytics</h3>
+                <form id="export-form">
+                    <div class="form-group">
+                        <label>Export Type</label>
+                        <select name="export_type" required>
+                            <option value="venues">Venue Analytics</option>
+                            <option value="events">Event Data</option>
+                            <option value="sessions">User Sessions</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" name="start_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>End Date</label>
+                        <input type="date" name="end_date" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Export CSV</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Audit Log Section -->
+        <div id="audit-section" class="content-section">
+            <div class="card">
+                <h3>Recent Activity</h3>
+                <div id="audit-log" class="audit-log loading">Loading audit log...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('access_token');
+        let currentTab = 'venues';
+
+        // Check authentication
+        if (!token) {
+            window.location.href = '/admin';
+        }
+
+        // API helper
+        async function apiCall(url, options = {}) {
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    ...options.headers
+                }
+            });
+
+            if (response.status === 401) {
+                // Try to refresh token
+                const refreshToken = localStorage.getItem('refresh_token');
+                if (refreshToken) {
+                    const refreshResponse = await fetch('/api/auth/refresh', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refresh_token: refreshToken })
+                    });
+
+                    if (refreshResponse.ok) {
+                        const data = await refreshResponse.json();
+                        token = data.access_token;
+                        localStorage.setItem('access_token', data.access_token);
+                        localStorage.setItem('refresh_token', data.refresh_token);
+                        
+                        // Retry original request
+                        return apiCall(url, options);
+                    }
+                }
+                
+                // Refresh failed, redirect to login
+                logout();
+                return;
+            }
+
+            return response;
+        }
+
+        // Initialize
+        async function init() {
+            // Get user info
+            const userResponse = await apiCall('/api/auth/me');
+            if (userResponse && userResponse.ok) {
+                const user = await userResponse.json();
+                document.getElementById('username').textContent = user.username;
+            }
+
+            // Load initial data
+            loadVenues();
+            loadContent();
+            loadAuditLog();
+        }
+
+        // Tab switching
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update content sections
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`${tab}-section`).classList.add('active');
+            
+            // Refresh data
+            if (tab === 'venues') loadVenues();
+            else if (tab === 'content') loadContent();
+            else if (tab === 'analytics') loadAnalytics();
+            else if (tab === 'audit') loadAuditLog();
+        }
+
+        // Show alert
+        function showAlert(message, type = 'success') {
+            const alertContainer = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            alertContainer.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        // Venues
+        async function loadVenues() {
+            const response = await apiCall('/api/venues');
+            const venues = await response.json();
+            
+            const venuesList = document.getElementById('venues-list');
+            const venueSelect = document.querySelector('select[name="venue_id"]');
+            
+            venuesList.innerHTML = '';
+            venueSelect.innerHTML = '<option value="">Select venue</option>';
+            
+            venues.forEach(venue => {
+                // Add to list
+                const item = document.createElement('div');
+                item.className = 'venue-item';
+                item.innerHTML = `
+                    <div class="item-info">
+                        <h4>${venue.name}</h4>
+                        <p>${venue.neighborhood} - ${venue.venue_type}</p>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="deleteVenue(${venue.id}, '${venue.name}')">Delete</button>
+                    </div>
+                `;
+                venuesList.appendChild(item);
+                
+                // Add to select
+                const option = document.createElement('option');
+                option.value = venue.id;
+                option.textContent = venue.name;
+                venueSelect.appendChild(option);
+            });
+        }
+
+        // Content
+        async function loadContent() {
+            const response = await apiCall('/api/content');
+            const content = await response.json();
+            
+            const contentList = document.getElementById('content-list');
+            contentList.innerHTML = '';
+            
+            content.forEach(item => {
+                const contentItem = document.createElement('div');
+                contentItem.className = 'content-item';
+                contentItem.innerHTML = `
+                    <div class="item-info">
+                        <h4>${item.venue_name} - ${item.content_type}</h4>
+                        <p>${item.caption || 'No caption'}</p>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-danger" onclick="deleteContent(${item.id})">Delete</button>
+                    </div>
+                `;
+                contentList.appendChild(contentItem);
+            });
+        }
+
+        // Audit Log
+        async function loadAuditLog() {
+            const response = await apiCall('/api/admin/audit-log?limit=50');
+            const logs = await response.json();
+            
+            const auditLog = document.getElementById('audit-log');
+            auditLog.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Resource</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${logs.map(log => `
+                            <tr>
+                                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                                <td>${log.username}</td>
+                                <td>${log.action}</td>
+                                <td>${log.resource_type || '-'}</td>
+                                <td>${log.details || '-'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Form submissions
+        document.getElementById('venue-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            // Convert to JSON for non-file fields
+            const venueData = {};
+            for (let [key, value] of formData.entries()) {
+                if (key !== 'photo') {
+                    venueData[key] = value;
+                }
+            }
+            
+            const response = await apiCall('/api/admin/venues', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(venueData)
+            });
+            
+            if (response.ok) {
+                showAlert('Venue created successfully');
+                e.target.reset();
+                loadVenues();
+            } else {
+                const error = await response.json();
+                showAlert(error.detail || 'Failed to create venue', 'error');
+            }
+        };
+
+        document.getElementById('content-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            const response = await apiCall('/api/admin/content', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                showAlert('Content created successfully');
+                e.target.reset();
+                loadContent();
+            } else {
+                const error = await response.json();
+                showAlert(error.detail || 'Failed to create content', 'error');
+            }
+        };
+
+        // Delete functions
+        async function deleteVenue(id, name) {
+            if (!confirm(`Delete venue "${name}"? This will also delete all associated content.`)) return;
+            
+            const response = await apiCall(`/api/admin/venues/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showAlert('Venue deleted successfully');
+                loadVenues();
+            } else {
+                showAlert('Failed to delete venue', 'error');
+            }
+        }
+
+        async function deleteContent(id) {
+            if (!confirm('Delete this content?')) return;
+            
+            const response = await apiCall(`/api/admin/content/${id}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                showAlert('Content deleted successfully');
+                loadContent();
+            } else {
+                showAlert('Failed to delete content', 'error');
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/admin';
+        }
+
+        // Analytics functions
+        async function loadAnalytics() {
+            loadRealtimeStats();
+            loadGlobalAnalytics();
+            loadTopVenuesAnalytics();
+        }
+
+        async function loadRealtimeStats() {
+            try {
+                const response = await apiCall('/api/admin/analytics/realtime');
+                const data = await response.json();
+                
+                const realtimeDiv = document.getElementById('realtime-stats');
+                realtimeDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #007bff; font-size: 2rem;">${data.active_sessions}</h4>
+                            <p style="margin: 0; color: #666;">Active Sessions</p>
+                            <small>Last 30 minutes</small>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #28a745; font-size: 2rem;">${data.recent_events}</h4>
+                            <p style="margin: 0; color: #666;">Recent Events</p>
+                            <small>Last hour</small>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #ffc107; font-size: 2rem;">${data.top_venues_hour.length}</h4>
+                            <p style="margin: 0; color: #666;">Active Venues</p>
+                            <small>Last hour</small>
+                        </div>
+                    </div>
+                    
+                    ${data.top_venues_hour.length > 0 ? `
+                        <div style="margin-top: 1rem;">
+                            <h5>Trending Now</h5>
+                            <ul style="list-style: none; padding: 0;">
+                                ${data.top_venues_hour.map(venue => `
+                                    <li style="padding: 0.5rem; border-bottom: 1px solid #eee;">
+                                        <strong>${venue.name}</strong> - ${venue.views} views
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                    
+                    ${data.recent_searches.length > 0 ? `
+                        <div style="margin-top: 1rem;">
+                            <h5>Recent Searches</h5>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${data.recent_searches.map(search => `
+                                    <span style="background: #e9ecef; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.9rem;">
+                                        ${search.search_term} (${search.frequency})
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+            } catch (error) {
+                document.getElementById('realtime-stats').innerHTML = '<p style="color: red;">Failed to load real-time stats</p>';
+            }
+        }
+
+        async function loadGlobalAnalytics() {
+            try {
+                const days = document.getElementById('analytics-period').value;
+                const response = await apiCall(`/api/admin/analytics/global?days=${days}`);
+                const data = await response.json();
+                
+                const globalDiv = document.getElementById('global-analytics');
+                globalDiv.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #007bff; font-size: 1.8rem;">${data.global_stats.unique_visitors || 0}</h4>
+                            <p style="margin: 0; color: #666;">Unique Visitors</p>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #28a745; font-size: 1.8rem;">${data.global_stats.venue_views || 0}</h4>
+                            <p style="margin: 0; color: #666;">Venue Views</p>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #ffc107; font-size: 1.8rem;">${data.global_stats.content_views || 0}</h4>
+                            <p style="margin: 0; color: #666;">Content Views</p>
+                        </div>
+                        <div style="text-align: center; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+                            <h4 style="margin: 0; color: #dc3545; font-size: 1.8rem;">${data.global_stats.total_events || 0}</h4>
+                            <p style="margin: 0; color: #666;">Total Events</p>
+                        </div>
+                    </div>
+                    
+                    ${data.popular_searches.length > 0 ? `
+                        <div>
+                            <h5>Popular Searches (${days} days)</h5>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
+                                ${data.popular_searches.slice(0, 10).map(search => `
+                                    <div style="background: #e9ecef; padding: 0.5rem; border-radius: 4px; text-align: center;">
+                                        <strong>${search.search_term}</strong><br>
+                                        <small>${search.frequency} searches</small>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                `;
+                
+                // Create simple chart
+                drawActivityChart(data.daily_activity);
+                
+            } catch (error) {
+                document.getElementById('global-analytics').innerHTML = '<p style="color: red;">Failed to load analytics</p>';
+            }
+        }
+
+        async function loadTopVenuesAnalytics() {
+            try {
+                const days = document.getElementById('analytics-period').value;
+                const response = await apiCall(`/api/admin/analytics/global?days=${days}`);
+                const data = await response.json();
+                
+                const topVenuesDiv = document.getElementById('top-venues-analytics');
+                
+                if (data.top_venues && data.top_venues.length > 0) {
+                    topVenuesDiv.innerHTML = `
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa;">
+                                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #ddd;">Venue</th>
+                                        <th style="padding: 0.75rem; text-align: left; border-bottom: 1px solid #ddd;">Neighborhood</th>
+                                        <th style="padding: 0.75rem; text-align: center; border-bottom: 1px solid #ddd;">Views</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.top_venues.map((venue, index) => `
+                                        <tr style="border-bottom: 1px solid #eee;">
+                                            <td style="padding: 0.75rem;">
+                                                <span style="background: ${index < 3 ? '#ffd700' : '#f8f9fa'}; 
+                                                           padding: 0.25rem 0.5rem; border-radius: 12px; margin-right: 0.5rem; 
+                                                           font-weight: bold; font-size: 0.8rem;">
+                                                    #${index + 1}
+                                                </span>
+                                                ${venue.name}
+                                            </td>
+                                            <td style="padding: 0.75rem;">${venue.neighborhood}</td>
+                                            <td style="padding: 0.75rem; text-align: center; font-weight: bold; color: #007bff;">
+                                                ${venue.views}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                } else {
+                    topVenuesDiv.innerHTML = '<p style="color: #666; text-align: center; padding: 2rem;">No venue data available for this period</p>';
+                }
+            } catch (error) {
+                document.getElementById('top-venues-analytics').innerHTML = '<p style="color: red;">Failed to load venue analytics</p>';
+            }
+        }
+
+        function drawActivityChart(dailyData) {
+            const canvas = document.getElementById('analytics-chart');
+            const ctx = canvas.getContext('2d');
+            
+            if (!dailyData || dailyData.length === 0) {
+                ctx.fillText('No data available', canvas.width / 2 - 50, canvas.height / 2);
+                return;
+            }
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Chart dimensions
+            const padding = 60;
+            const chartWidth = canvas.width - 2 * padding;
+            const chartHeight = canvas.height - 2 * padding;
+            
+            // Find max value
+            const maxEvents = Math.max(...dailyData.map(d => d.total_events || 0));
+            const maxVisitors = Math.max(...dailyData.map(d => d.unique_visitors || 0));
+            const maxValue = Math.max(maxEvents, maxVisitors);
+            
+            if (maxValue === 0) {
+                ctx.fillText('No activity data', canvas.width / 2 - 50, canvas.height / 2);
+                return;
+            }
+            
+            // Draw axes
+            ctx.strokeStyle = '#ddd';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, padding + chartHeight);
+            ctx.lineTo(padding + chartWidth, padding + chartHeight);
+            ctx.stroke();
+            
+            // Plot data
+            const stepX = chartWidth / Math.max(dailyData.length - 1, 1);
+            
+            // Events line (blue)
+            ctx.strokeStyle = '#007bff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            dailyData.forEach((day, index) => {
+                const x = padding + index * stepX;
+                const y = padding + chartHeight - ((day.total_events || 0) / maxValue) * chartHeight;
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Visitors line (green)
+            ctx.strokeStyle = '#28a745';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            dailyData.forEach((day, index) => {
+                const x = padding + index * stepX;
+                const y = padding + chartHeight - ((day.unique_visitors || 0) / maxValue) * chartHeight;
+                if (index === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Legend
+            ctx.fillStyle = '#007bff';
+            ctx.fillRect(10, 10, 15, 15);
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.fillText('Total Events', 30, 22);
+            
+            ctx.fillStyle = '#28a745';
+            ctx.fillRect(10, 30, 15, 15);
+            ctx.fillStyle = '#333';
+            ctx.fillText('Unique Visitors', 30, 42);
+        }
+
+        // Export form handler
+        document.getElementById('export-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await apiCall('/api/admin/analytics/export', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        export_type: formData.get('export_type'),
+                        start_date: formData.get('start_date'),
+                        end_date: formData.get('end_date')
+                    })
+                });
+                
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `analytics_${formData.get('export_type')}_${formData.get('start_date')}_${formData.get('end_date')}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showAlert('Analytics exported successfully');
+                } else {
+                    showAlert('Failed to export analytics', 'error');
+                }
+            } catch (error) {
+                showAlert('Export failed', 'error');
+            }
+        };
+
+        // Auto-refresh real-time stats every 30 seconds
+        setInterval(() => {
+            if (currentTab === 'analytics') {
+                loadRealtimeStats();
+            }
+        }, 30000);
+
+        // Initialize on load
+        init();
+    </script>
+</body>
+</html>

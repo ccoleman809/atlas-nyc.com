@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="NYC Nightlife">
+    <title>NYC Nightlife - iOS Capture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .header {
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(20px);
+            padding: 20px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .capture-section {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .capture-section h2 {
+            font-size: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .capture-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .capture-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 15px;
+            padding: 20px 15px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .capture-btn:active {
+            transform: scale(0.95);
+            background: rgba(255,255,255,0.3);
+        }
+
+        .capture-btn .icon {
+            font-size: 24px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .form-section {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            font-size: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .form-input::placeholder,
+        .form-textarea::placeholder {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .form-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='white' viewBox='0 0 16 16'%3e%3cpath d='M8 11L3 6h10l-5 5z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #FF6B6B, #FF8E53);
+            border: none;
+            border-radius: 15px;
+            padding: 18px;
+            color: white;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:active {
+            transform: scale(0.98);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .preview img, .preview video {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+
+        .status {
+            text-align: center;
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .status.success {
+            background: rgba(76, 217, 100, 0.3);
+            border: 1px solid rgba(76, 217, 100, 0.5);
+        }
+
+        .status.error {
+            background: rgba(255, 59, 48, 0.3);
+            border: 1px solid rgba(255, 59, 48, 0.5);
+        }
+
+        .install-prompt {
+            background: rgba(0,0,0,0.4);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .install-prompt .icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌃 NYC Nightlife</h1>
+        <p>Capture & Share Live Content</p>
+    </div>
+
+    <div class="container">
+        <!-- PWA Install Prompt -->
+        <div class="install-prompt" id="installPrompt" style="display: none;">
+            <div class="icon">📱</div>
+            <p>Add to Home Screen for app-like experience</p>
+            <small>Safari → Share → Add to Home Screen</small>
+        </div>
+
+        <!-- Capture Section -->
+        <div class="capture-section">
+            <h2>📸 Capture Content</h2>
+            
+            <div class="capture-buttons">
+                <label for="photoInput" class="capture-btn">
+                    <span class="icon">📷</span>
+                    <span>Take Photo</span>
+                </label>
+                
+                <label for="videoInput" class="capture-btn">
+                    <span class="icon">🎥</span>
+                    <span>Record Video</span>
+                </label>
+            </div>
+
+            <input type="file" id="photoInput" class="file-input" accept="image/*" capture="environment">
+            <input type="file" id="videoInput" class="file-input" accept="video/*" capture="environment">
+            
+            <div id="preview" class="preview"></div>
+        </div>
+
+        <!-- Upload Form -->
+        <div class="form-section">
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label class="form-label">Select Venue</label>
+                    <select id="venueSelect" class="form-select" required>
+                        <option value="">Loading venues...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Content Type</label>
+                    <select id="contentType" class="form-select" required>
+                        <option value="story">Story (24 hours)</option>
+                        <option value="post">Post (Permanent)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Caption (Optional)</label>
+                    <textarea id="caption" class="form-textarea" rows="3" 
+                             placeholder="What's happening right now?"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                    🚀 Share to NYC Nightlife
+                </button>
+            </form>
+
+            <div id="status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8001';
+        let selectedFile = null;
+
+        // Load venues on startup
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVenues();
+            setupFileInputs();
+            checkInstallPrompt();
+        });
+
+        // Show install prompt for PWA
+        function checkInstallPrompt() {
+            // Show install prompt if not in standalone mode
+            if (!window.navigator.standalone) {
+                document.getElementById('installPrompt').style.display = 'block';
+            }
+        }
+
+        // Load venues from API
+        async function loadVenues() {
+            try {
+                const response = await fetch(`${API_BASE}/api/venues`);
+                if (response.ok) {
+                    const venues = await response.json();
+                    const select = document.getElementById('venueSelect');
+                    
+                    select.innerHTML = '<option value="">Select a venue...</option>';
+                    venues.forEach(venue => {
+                        const option = document.createElement('option');
+                        option.value = venue.id;
+                        option.textContent = `${venue.name} - ${venue.neighborhood}`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    throw new Error('Failed to load venues');
+                }
+            } catch (error) {
+                console.error('Error loading venues:', error);
+                showStatus('Could not connect to server', 'error');
+            }
+        }
+
+        // Setup file input handlers
+        function setupFileInputs() {
+            const photoInput = document.getElementById('photoInput');
+            const videoInput = document.getElementById('videoInput');
+
+            photoInput.addEventListener('change', handleFileSelect);
+            videoInput.addEventListener('change', handleFileSelect);
+        }
+
+        // Handle file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            selectedFile = file;
+            showPreview(file);
+            document.getElementById('submitBtn').disabled = false;
+        }
+
+        // Show file preview
+        function showPreview(file) {
+            const preview = document.getElementById('preview');
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                if (file.type.startsWith('image/')) {
+                    preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                } else if (file.type.startsWith('video/')) {
+                    preview.innerHTML = `<video controls><source src="${e.target.result}" type="${file.type}"></video>`;
+                }
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            if (!selectedFile) {
+                showStatus('Please capture or select a file first', 'error');
+                return;
+            }
+
+            const venueId = document.getElementById('venueSelect').value;
+            if (!venueId) {
+                showStatus('Please select a venue', 'error');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('venue_id', venueId);
+                formData.append('content_type', document.getElementById('contentType').value);
+                formData.append('caption', document.getElementById('caption').value);
+                formData.append('file', selectedFile);
+
+                const response = await fetch(`${API_BASE}/api/content`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showStatus(`✅ Content shared successfully! ID: ${result.id}`, 'success');
+                    resetForm();
+                } else {
+                    const error = await response.text();
+                    throw new Error(error);
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus(`❌ Upload failed: ${error.message}`, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Share to NYC Nightlife';
+            }
+        });
+
+        // Show status message
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+
+        // Reset form after successful upload
+        function resetForm() {
+            selectedFile = null;
+            document.getElementById('photoInput').value = '';
+            document.getElementById('videoInput').value = '';
+            document.getElementById('caption').value = '';
+            document.getElementById('preview').innerHTML = '';
+            document.getElementById('submitBtn').disabled = true;
+        }
+
+        // Register service worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(console.error);
+        }
+    </script>
+</body>
+</html>
