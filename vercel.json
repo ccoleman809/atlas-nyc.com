@@ -15,10 +15,5 @@
   "env": {
     "ENVIRONMENT": "production",
     "DEBUG": "false"
-  },
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 30
-    }
   }
 }
