@@ -15,6 +15,8 @@ import mimetypes
 from config import settings
 import googlemaps
 import logging
+from functools import lru_cache
+import time
 
 # Fix all logging issues for production
 import os
@@ -231,6 +233,11 @@ async def get_public_interface():
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Public interface not found")
 
+@lru_cache(maxsize=100)
+def _get_cached_venues():
+    """Cached venue data retrieval"""
+    return db.get_all_venues()
+
 @app.get("/venues")
 async def get_venues(
     page: int = 1,
@@ -248,7 +255,7 @@ async def get_venues(
         
         # Try to get venues, return sample data if database not ready
         try:
-            all_venues = db.get_all_venues()
+            all_venues = _get_cached_venues()
         except Exception as db_error:
             # Return sample venues if database not ready
             return {
@@ -321,6 +328,23 @@ async def create_venue(
         if not name or not neighborhood or not instagram_handle or not venue_type:
             raise HTTPException(status_code=400, detail="Missing required fields")
         
+        # Validate field lengths
+        if len(name.strip()) > 100:
+            raise HTTPException(status_code=400, detail="Venue name too long (max 100 characters)")
+        if len(neighborhood.strip()) > 50:
+            raise HTTPException(status_code=400, detail="Neighborhood name too long (max 50 characters)")
+        if len(instagram_handle.strip()) > 30:
+            raise HTTPException(status_code=400, detail="Instagram handle too long (max 30 characters)")
+        
+        # Validate venue type
+        valid_types = ['nightclub', 'bar', 'cocktail_bar', 'dive_bar', 'rooftop_bar', 'lounge', 'live_music_venue']
+        if venue_type.strip() not in valid_types:
+            raise HTTPException(status_code=400, detail=f"Invalid venue type. Must be one of: {', '.join(valid_types)}")
+        
+        # Validate price range
+        if price_range and price_range.strip() not in ['$', '$$', '$$$', '$$$$']:
+            raise HTTPException(status_code=400, detail="Invalid price range. Must be $, $$, $$$, or $$$$")
+        
         # Handle photo upload or URL
         photo_path = None
         if photo and photo.filename:
@@ -375,10 +399,30 @@ async def create_content(
     """Create new content (Instagram post, story, or event)"""
     try:
         # Validate venue exists
+        if venue_id <= 0:
+            raise HTTPException(status_code=400, detail="Invalid venue ID")
+        
         venues = db.get_all_venues()
         venue_exists = any(v.venue_id == venue_id for v in venues)
         if not venue_exists:
             raise HTTPException(status_code=404, detail=f"Venue with ID {venue_id} not found")
+        
+        # Validate content type
+        valid_content_types = ['instagram_story', 'instagram_post', 'event', 'photo', 'video']
+        if content_type.strip() not in valid_content_types:
+            raise HTTPException(status_code=400, detail=f"Invalid content type. Must be one of: {', '.join(valid_content_types)}")
+        
+        # Validate caption length
+        if len(caption.strip()) > 500:
+            raise HTTPException(status_code=400, detail="Caption too long (max 500 characters)")
+        
+        # Validate crowd level
+        if crowd_level and crowd_level.strip() not in ['empty', 'moderate', 'busy', 'packed']:
+            raise HTTPException(status_code=400, detail="Invalid crowd level. Must be: empty, moderate, busy, or packed")
+        
+        # Validate urgency
+        if urgency and urgency.strip() not in ['low', 'medium', 'high', 'urgent']:
+            raise HTTPException(status_code=400, detail="Invalid urgency. Must be: low, medium, high, or urgent")
         
         # Handle file upload or URL
         file_path = None
