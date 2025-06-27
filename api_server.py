@@ -14,6 +14,12 @@ from urllib.parse import urlparse
 import mimetypes
 from config import settings
 import googlemaps
+import logging
+
+# Disable problematic logging in production
+if settings.ENVIRONMENT == "production":
+    logging.getLogger().handlers = []
+    logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
 
 # Create uploads directory
 uploads_dir = Path("uploads")
