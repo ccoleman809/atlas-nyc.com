@@ -649,7 +649,7 @@ if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8002))
     host = "0.0.0.0"
     
-    print("🚀 Starting Atlas-NYC API server...")
+    print("🚀 Starting Atlas-NYC API server (v1.0)...")
     print(f"📱 API available at: http://{host}:{port}")
     print(f"🌐 Mobile portal at: http://{host}:{port}/mobile")
     print(f"📰 Public interface at: http://{host}:{port}/public")
