@@ -524,6 +524,21 @@ async def health_check():
         "google_maps": "enabled" if gmaps else "disabled"
     }
 
+@app.post("/admin/init-db")
+async def initialize_database():
+    """Initialize database with tables (admin only)"""
+    try:
+        # Initialize database
+        db_init = VenueDatabase()
+        
+        # Import NYC venues
+        from import_nyc_venues import import_venues
+        import_venues()
+        
+        return {"message": "Database initialized successfully with NYC venues"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")
+
 @app.get("/maps/geocode")
 async def geocode_address(address: str):
     """Geocode an address to get latitude and longitude"""
