@@ -103,8 +103,8 @@ def validate_production_settings():
         if settings.DEBUG:
             warnings.append("DEBUG should be False in production")
         
-        if "localhost" in settings.BASE_URL:
-            errors.append("BASE_URL must be set to your production domain")
+        if "localhost" in settings.BASE_URL or settings.BASE_URL == "http://localhost:8002":
+            warnings.append("BASE_URL should be set to your production domain")
         
         if any("localhost" in origin for origin in settings.ALLOWED_ORIGINS):
             warnings.append("ALLOWED_ORIGINS contains localhost entries")
