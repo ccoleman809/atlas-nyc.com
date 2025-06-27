@@ -433,6 +433,39 @@
         .hidden {
             display: none;
         }
+        
+        /* Map Section */
+        .map-container {
+            margin-top: 2rem;
+        }
+        
+        .map-controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .map-control-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .map-control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .map-control-btn.active {
+            background: linear-gradient(135deg, #764ba2, #667eea);
+        }
     </style>
 </head>
 <body>
@@ -507,24 +540,15 @@
             </div>
         </section>
 
-        <section class="stats-section" id="stats">
-            <h2 class="section-title" style="color: white;">NYC Nightlife by the Numbers</h2>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-number" id="venues-count">500+</div>
-                    <div class="stat-label">Venues Listed</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="neighborhoods-count">25+</div>
-                    <div class="stat-label">Neighborhoods</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="updates-count">1000+</div>
-                    <div class="stat-label">Daily Updates</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-number" id="users-count">10K+</div>
-                    <div class="stat-label">Monthly Users</div>
+        <section class="content-section" id="map">
+            <h2 class="section-title">Interactive NYC Nightlife Map</h2>
+            <div class="map-container">
+                <div id="atlas-map" style="height: 500px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);"></div>
+                <div class="map-controls">
+                    <button class="map-control-btn" onclick="showAllVenues()">All Venues</button>
+                    <button class="map-control-btn" onclick="filterByType('nightclub')">Nightclubs</button>
+                    <button class="map-control-btn" onclick="filterByType('bar')">Bars</button>
+                    <button class="map-control-btn" onclick="filterByType('rooftop')">Rooftops</button>
                 </div>
             </div>
         </section>
@@ -540,6 +564,9 @@
         </div>
         <p>&copy; 2024 Atlas-NYC. All rights reserved. | NYC's Premier Nightlife Discovery Platform</p>
     </footer>
+
+    <!-- Google Maps API -->
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIJcXpuBHBiDhlz2KcfKjkdQn7gYo6iD0&libraries=places&callback=initMap"></script>
 
     <script>
         // SEO and Analytics tracking
@@ -670,6 +697,131 @@
             const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
             trackEvent('page_performance', { load_time: loadTime, page: 'home' });
         });
+
+        // Google Maps Integration
+        let map;
+        let markers = [];
+        let allVenues = [];
+
+        function initMap() {
+            // Initialize map centered on Manhattan
+            map = new google.maps.Map(document.getElementById('atlas-map'), {
+                zoom: 12,
+                center: { lat: 40.7589, lng: -73.9851 }, // Times Square
+                styles: [
+                    {
+                        featureType: 'poi',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    },
+                    {
+                        featureType: 'transit',
+                        elementType: 'labels',
+                        stylers: [{ visibility: 'off' }]
+                    }
+                ]
+            });
+
+            // Load venues and add to map
+            loadVenuesForMap();
+        }
+
+        async function loadVenuesForMap() {
+            try {
+                // Try to fetch from our API first
+                const response = await fetch('/venues');
+                if (response.ok) {
+                    const data = await response.json();
+                    allVenues = data.venues || [];
+                } else {
+                    throw new Error('API not available');
+                }
+            } catch (error) {
+                // Fallback to sample NYC venues with coordinates
+                allVenues = [
+                    { id: 1, name: "House of Yes", neighborhood: "Bushwick", venue_type: "nightclub", lat: 40.7053, lng: -73.9233 },
+                    { id: 2, name: "Brooklyn Bowl", neighborhood: "Williamsburg", venue_type: "live_music_venue", lat: 40.7220, lng: -73.9575 },
+                    { id: 3, name: "Death & Co", neighborhood: "East Village", venue_type: "cocktail_bar", lat: 40.7259, lng: -73.9846 },
+                    { id: 4, name: "Le Bain", neighborhood: "Meatpacking", venue_type: "rooftop_bar", lat: 40.7411, lng: -74.0083 },
+                    { id: 5, name: "Output", neighborhood: "Williamsburg", venue_type: "nightclub", lat: 40.7223, lng: -73.9578 },
+                    { id: 6, name: "Beauty & Essex", neighborhood: "Lower East Side", venue_type: "cocktail_lounge", lat: 40.7204, lng: -73.9869 },
+                    { id: 7, name: "The Box", neighborhood: "Lower East Side", venue_type: "nightclub", lat: 40.7219, lng: -73.9923 },
+                    { id: 8, name: "Marquee", neighborhood: "Chelsea", venue_type: "nightclub", lat: 40.7501, lng: -74.0028 }
+                ];
+            }
+
+            // Add markers to map
+            addMarkersToMap(allVenues);
+        }
+
+        function addMarkersToMap(venues) {
+            // Clear existing markers
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+
+            venues.forEach(venue => {
+                if (venue.lat && venue.lng) {
+                    const marker = new google.maps.Marker({
+                        position: { lat: venue.lat, lng: venue.lng },
+                        map: map,
+                        title: venue.name,
+                        icon: {
+                            url: getMarkerIcon(venue.venue_type),
+                            scaledSize: new google.maps.Size(30, 30)
+                        }
+                    });
+
+                    // Info window
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `
+                            <div style="max-width: 200px;">
+                                <h3 style="margin: 0 0 5px 0; color: #333;">${venue.name}</h3>
+                                <p style="margin: 0 0 5px 0; color: #666;">${venue.venue_type} • ${venue.neighborhood}</p>
+                                ${venue.description ? `<p style="margin: 0; font-size: 12px; color: #888;">${venue.description.substring(0, 80)}...</p>` : ''}
+                            </div>
+                        `
+                    });
+
+                    marker.addListener('click', () => {
+                        infoWindow.open(map, marker);
+                        trackEvent('map_marker_click', { venue_id: venue.id, venue_name: venue.name });
+                    });
+
+                    markers.push(marker);
+                }
+            });
+        }
+
+        function getMarkerIcon(venueType) {
+            const icons = {
+                'nightclub': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRjAwRkYiLz4KPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMkM0LjY4NiAyIDIgNC42ODYgMiA4QzIgMTEuMzE0IDQuNjg2IDE0IDggMTRDMTEuMzE0IDE0IDE0IDExLjMxNCAxNCA4QzE0IDQuNjg2IDExLjMxNCAyIDggMloiIGZpbGw9IndoaXRlIi8+CjwvZz4KPC9zdmc+',
+                'cocktail_bar': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiMwMDc3QkUiLz4KPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMkM0LjY4NiAyIDIgNC42ODYgMiA4QzIgMTEuMzE0IDQuNjg2IDE0IDggMTRDMTEuMzE0IDE0IDE0IDExLjMxNCAxNCA4QzE0IDQuNjg2IDExLjMxNCAyIDggMloiIGZpbGw9IndoaXRlIi8+CjwvZz4KPC9zdmc+',
+                'rooftop_bar': 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTIiIGZpbGw9IiNGRkE1MDAiLz4KPHN2ZyB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHZpZXdCb3g9IjAgMCAxNiAxNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTggMkM0LjY4NiAyIDIgNC42ODYgMiA4QzIgMTEuMzE0IDQuNjg2IDE0IDggMTRDMTEuMzE0IDE0IDE0IDExLjMxNCAxNCA4QzE0IDQuNjg2IDExLjMxNCAyIDggMloiIGZpbGw9IndoaXRlIi8+CjwvZz4KPC9zdmc+'
+            };
+            return icons[venueType] || icons['cocktail_bar'];
+        }
+
+        // Map control functions
+        function showAllVenues() {
+            addMarkersToMap(allVenues);
+            updateActiveButton('All Venues');
+        }
+
+        function filterByType(type) {
+            const filtered = allVenues.filter(venue => venue.venue_type.includes(type));
+            addMarkersToMap(filtered);
+            updateActiveButton(type);
+        }
+
+        function updateActiveButton(activeType) {
+            document.querySelectorAll('.map-control-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent.toLowerCase().includes(activeType.toLowerCase()) || 
+                    (activeType === 'All Venues' && btn.textContent === 'All Venues')) {
+                    btn.classList.add('active');
+                }
+            });
+        }
     </script>
 </body>
 </html>
