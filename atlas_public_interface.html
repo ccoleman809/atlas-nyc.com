@@ -473,10 +473,9 @@
         <div class="nav-content">
             <a href="/" class="nav-logo" aria-label="Atlas-NYC Home">Atlas-NYC</a>
             <ul class="nav-links">
-                <li><a href="#venues">Venues</a></li>
+                <li><a href="#search">Search</a></li>
                 <li><a href="#neighborhoods">Neighborhoods</a></li>
-                <li><a href="#content">Latest</a></li>
-                <li><a href="#about">About</a></li>
+                <li><a href="#map">Map</a></li>
             </ul>
         </div>
     </nav>
@@ -485,44 +484,17 @@
         <div class="hero-content">
             <h1 class="logo">Atlas-NYC</h1>
             <p class="tagline">Discover NYC's Hottest Nightlife Scene</p>
-            <a href="#venues" class="cta-button">Explore Venues</a>
+            <a href="#search" class="cta-button">Start Exploring</a>
         </div>
     </header>
 
     <main>
-        <section class="content-section" id="about">
-            <h2 class="section-title">Your Guide to NYC After Dark</h2>
+        <section class="content-section" id="search">
+            <h2 class="section-title">Discover NYC Nightlife</h2>
             
             <div class="search-box">
                 <input type="text" class="search-input" placeholder="Search venues, neighborhoods, or vibes..." id="search-input" aria-label="Search NYC nightlife venues">
                 <button class="search-button" onclick="performSearch()" aria-label="Search">Search</button>
-            </div>
-            
-            <div class="features-grid">
-                <article class="feature-card">
-                    <div class="feature-icon">🏙️</div>
-                    <h3>Real-Time Updates</h3>
-                    <p>Get live updates on what's happening at NYC's hottest venues. From crowd levels to special events, stay in the know.</p>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">🗺️</div>
-                    <h3>Interactive Map</h3>
-                    <p>Explore NYC nightlife venues on our interactive map. Find the perfect spot wherever you are in the city.</p>
-                </article>
-                
-                <article class="feature-card">
-                    <div class="feature-icon">🔍</div>
-                    <h3>Smart Search</h3>
-                    <p>Search venues by name, neighborhood, vibe, or atmosphere. Find exactly what you're looking for instantly.</p>
-                </article>
-            </div>
-        </section>
-
-        <section class="content-section" id="venues">
-            <h2 class="section-title">Featured Venues</h2>
-            <div class="venue-grid" id="venues-container">
-                <div class="loading">Loading amazing venues...</div>
             </div>
         </section>
 
@@ -688,7 +660,6 @@
         // Initialize when page loads
         document.addEventListener('DOMContentLoaded', () => {
             initTracking();
-            loadVenues();
         });
         
         // Performance tracking
