@@ -26,7 +26,9 @@ async def root():
     return {
         "message": "Atlas-NYC API is running!",
         "version": "1.0.0",
-        "status": "simplified_mode"
+        "status": "simplified_mode",
+        "timestamp": datetime.now().isoformat(),
+        "test_id": "SIMPLE_API_WORKING_796f188"
     }
 
 @app.get("/health")
