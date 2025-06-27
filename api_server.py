@@ -16,10 +16,19 @@ from config import settings
 import googlemaps
 import logging
 
-# Disable problematic logging in production
-if settings.ENVIRONMENT == "production":
-    logging.getLogger().handlers = []
-    logging.basicConfig(level=logging.WARNING, format='%(levelname)s: %(message)s')
+# Fix logging configuration issues in production
+import os
+if os.environ.get("ENVIRONMENT") == "production":
+    # Completely disable problematic loggers
+    logging.getLogger("analytics").disabled = True
+    logging.getLogger("error_logger").disabled = True
+    
+    # Set up simple logging
+    logging.basicConfig(
+        level=logging.WARNING,
+        format='%(levelname)s: %(message)s',
+        force=True
+    )
 
 # Create uploads directory
 uploads_dir = Path("uploads")

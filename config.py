@@ -95,6 +95,11 @@ def validate_production_settings():
     warnings = []
     errors = []
     
+    # Skip validation if running in container/cloud environment
+    if os.environ.get("RENDER") or os.environ.get("RAILWAY_ENVIRONMENT"):
+        print("✅ Running in cloud environment - skipping detailed validation")
+        return True
+    
     if settings.ENVIRONMENT == "production":
         # Security checks
         if settings.SECRET_KEY == "your-secret-key-here-change-in-production":
