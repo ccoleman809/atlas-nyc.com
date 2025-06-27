@@ -240,8 +240,20 @@ async def get_venues(
         if per_page < 1 or per_page > 100:
             per_page = 20
         
-        # Get all venues (will implement filtering in venue_db)
-        all_venues = db.get_all_venues()
+        # Try to get venues, return sample data if database not ready
+        try:
+            all_venues = db.get_all_venues()
+        except Exception as db_error:
+            # Return sample venues if database not ready
+            return {
+                "venues": [
+                    {"id": 1, "name": "Sample Venue", "neighborhood": "Brooklyn", 
+                     "instagram_handle": "sample", "venue_type": "bar", 
+                     "description": "Database not initialized yet"}
+                ],
+                "pagination": {"page": 1, "per_page": 20, "total": 1, "pages": 1},
+                "error": f"Database not ready: {str(db_error)}"
+            }
         
         # Apply filters
         filtered_venues = all_venues
@@ -531,6 +543,17 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "database": "connected",
         "google_maps": "enabled" if gmaps else "disabled"
+    }
+
+@app.get("/debug/env")
+async def debug_environment():
+    """Debug endpoint to check environment"""
+    import os
+    return {
+        "database_url_set": bool(os.environ.get("DATABASE_URL")),
+        "environment": os.environ.get("ENVIRONMENT", "not_set"),
+        "base_url": os.environ.get("BASE_URL", "not_set"),
+        "total_env_vars": len(os.environ)
     }
 
 @app.post("/admin/init-db")
