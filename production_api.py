@@ -3,9 +3,11 @@
 Production-ready Atlas-NYC API with database connection
 """
 
-from fastapi import FastAPI, HTTPException, Form, File, UploadFile
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+import secrets
 import os
 from datetime import datetime
 from venue_db import VenueDatabase, Venue
@@ -14,6 +16,13 @@ from typing import Optional
 
 # Create FastAPI app
 app = FastAPI(title="Atlas-NYC API", version="2.0.0")
+
+# Security
+security = HTTPBasic()
+
+# Admin credentials
+ADMIN_USERNAME = "doughboy809"
+ADMIN_PASSWORD = "Allstate@168"
 
 # CORS middleware
 app.add_middleware(
@@ -31,6 +40,20 @@ try:
 except Exception as e:
     print(f"⚠️ Database initialization failed: {e}")
     db = None
+
+# Authentication function
+def verify_admin(credentials: HTTPBasicCredentials = Depends(security)):
+    """Verify admin credentials"""
+    correct_username = secrets.compare_digest(credentials.username, ADMIN_USERNAME)
+    correct_password = secrets.compare_digest(credentials.password, ADMIN_PASSWORD)
+    
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
 
 @app.get("/")
 async def root():
@@ -192,7 +215,8 @@ async def create_venue(
     address: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     busy_nights: Optional[str] = Form(None),
-    price_range: Optional[str] = Form(None)
+    price_range: Optional[str] = Form(None),
+    admin_user: str = Depends(verify_admin)
 ):
     """Create a new venue"""
     try:
@@ -244,7 +268,8 @@ async def update_venue(
     address: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
     busy_nights: Optional[str] = Form(None),
-    price_range: Optional[str] = Form(None)
+    price_range: Optional[str] = Form(None),
+    admin_user: str = Depends(verify_admin)
 ):
     """Update an existing venue"""
     try:
@@ -301,7 +326,7 @@ async def update_venue(
         raise HTTPException(status_code=500, detail=f"Error updating venue: {str(e)}")
 
 @app.delete("/venues/{venue_id}")
-async def delete_venue(venue_id: int):
+async def delete_venue(venue_id: int, admin_user: str = Depends(verify_admin)):
     """Delete a venue"""
     try:
         if not db:

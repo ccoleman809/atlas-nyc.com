@@ -226,14 +226,112 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Login Modal Styles */
+        .login-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .login-content {
+            background: white;
+            padding: 3rem;
+            border-radius: 16px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .login-content h2 {
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+            font-size: 1.8rem;
+        }
+
+        .login-content p {
+            margin-bottom: 2rem;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .login-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .login-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .login-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .login-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-error {
+            background: #fed7d7;
+            color: #c53030;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        @keyframes shake {
+            0%, 20%, 40%, 60%, 80%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+        }
     </style>
 </head>
 <body>
-    <header class="admin-header">
-        <h1>Atlas-NYC Admin - Venue Management</h1>
-    </header>
+    <!-- Login Modal -->
+    <div id="loginModal" class="login-modal">
+        <div class="login-content">
+            <h2>🔐 Admin Access Required</h2>
+            <p>Please enter your credentials to access the admin panel.</p>
+            <form id="loginForm">
+                <div class="login-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="login-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Login</button>
+                <div id="loginError" class="login-error" style="display: none;">Invalid credentials. Please try again.</div>
+            </form>
+        </div>
+    </div>
 
-    <div class="container">
+    <div id="adminContent" style="display: none;">
+        <header class="admin-header">
+            <h1>Atlas-NYC Admin - Venue Management</h1>
+            <button class="btn btn-secondary" onclick="logout()" style="position: absolute; right: 2rem; top: 1rem;">Logout</button>
+        </header>
+
+        <div class="container">
         <div class="action-buttons">
             <button class="btn btn-primary" onclick="showAddModal()">+ Add New Venue</button>
             <a href="/atlas" class="btn btn-secondary">View Public Site</a>
@@ -246,6 +344,7 @@
         <div class="venue-grid" id="venueGrid">
             <!-- Venues will be loaded here -->
         </div>
+    </div>
     </div>
 
     <!-- Add/Edit Modal -->
@@ -346,10 +445,80 @@
         let allVenues = [];
         let editingVenueId = null;
 
-        // Load venues on page load
-        document.addEventListener('DOMContentLoaded', loadVenues);
+        // Authentication state
+        let isAuthenticated = false;
+        const ADMIN_USERNAME = 'doughboy809';
+        const ADMIN_PASSWORD = 'Allstate@168';
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+        });
+
+        function checkAuth() {
+            // Check if user is already authenticated (session storage)
+            const authToken = sessionStorage.getItem('atlas_admin_auth');
+            if (authToken === btoa(ADMIN_USERNAME + ':' + ADMIN_PASSWORD)) {
+                isAuthenticated = true;
+                showAdminContent();
+            } else {
+                showLoginModal();
+            }
+        }
+
+        function showLoginModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('adminContent').style.display = 'none';
+        }
+
+        function showAdminContent() {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+            loadVenues(); // Load venues after successful auth
+        }
+
+        function logout() {
+            sessionStorage.removeItem('atlas_admin_auth');
+            isAuthenticated = false;
+            showLoginModal();
+        }
+
+        // Login form handler
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                // Store auth token
+                sessionStorage.setItem('atlas_admin_auth', btoa(username + ':' + password));
+                isAuthenticated = true;
+                showAdminContent();
+                
+                // Clear form
+                document.getElementById('loginForm').reset();
+                document.getElementById('loginError').style.display = 'none';
+            } else {
+                // Show error
+                document.getElementById('loginError').style.display = 'block';
+                document.getElementById('password').value = '';
+                
+                // Shake animation
+                const loginContent = document.querySelector('.login-content');
+                loginContent.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    loginContent.style.animation = '';
+                }, 500);
+            }
+        });
 
         async function loadVenues() {
+            if (!isAuthenticated) {
+                console.error('Unauthorized access attempt');
+                return;
+            }
+            
             try {
                 const response = await fetch('/venues');
                 const data = await response.json();
@@ -438,6 +607,11 @@
         document.getElementById('venueForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            if (!isAuthenticated) {
+                alert('You must be logged in to perform this action');
+                return;
+            }
+            
             const formData = new FormData(e.target);
             
             try {
@@ -472,6 +646,11 @@
         });
 
         async function deleteVenue(venueId, venueName) {
+            if (!isAuthenticated) {
+                alert('You must be logged in to perform this action');
+                return;
+            }
+            
             if (!confirm(`Are you sure you want to delete "${venueName}"?`)) {
                 return;
             }
