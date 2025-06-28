@@ -171,12 +171,17 @@ async def get_atlas_interface():
 
 @app.get("/admin", response_class=HTMLResponse)
 async def get_admin_portal():
-    """Serve the mobile admin portal for adding venues"""
+    """Serve the admin interface for managing venues"""
     try:
-        with open("mobile_portal.html", "r") as f:
+        with open("admin_interface.html", "r") as f:
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Admin portal not found")
+        # Fallback to mobile portal if admin interface not found
+        try:
+            with open("mobile_portal.html", "r") as f:
+                return HTMLResponse(content=f.read())
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="Admin portal not found")
 
 @app.post("/venues")
 async def create_venue(
@@ -228,6 +233,108 @@ async def create_venue(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating venue: {str(e)}")
+
+@app.put("/venues/{venue_id}")
+async def update_venue(
+    venue_id: int,
+    name: str = Form(...),
+    neighborhood: str = Form(...),
+    instagram_handle: str = Form(...),
+    venue_type: str = Form(...),
+    address: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    busy_nights: Optional[str] = Form(None),
+    price_range: Optional[str] = Form(None)
+):
+    """Update an existing venue"""
+    try:
+        if not db:
+            raise HTTPException(status_code=503, detail="Database not available")
+        
+        # Check if venue exists
+        venues = db.get_all_venues()
+        venue_exists = any(v.venue_id == venue_id for v in venues)
+        if not venue_exists:
+            raise HTTPException(status_code=404, detail="Venue not found")
+        
+        # Clean instagram handle
+        instagram_handle = instagram_handle.strip().replace('@', '')
+        
+        # Update venue in database
+        import sqlite3
+        conn = sqlite3.connect(db.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            UPDATE venues 
+            SET name = ?, neighborhood = ?, instagram_handle = ?, 
+                venue_type = ?, address = ?, description = ?, 
+                busy_nights = ?, price_range = ?
+            WHERE id = ?
+        """, (
+            name.strip(),
+            neighborhood.strip(),
+            instagram_handle,
+            venue_type.strip(),
+            address.strip() if address else None,
+            description.strip() if description else None,
+            busy_nights.strip() if busy_nights else None,
+            price_range.strip() if price_range else None,
+            venue_id
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        # Clear cache to show updated venue
+        _get_cached_venues.cache_clear()
+        
+        return {
+            "success": True,
+            "message": f"Venue '{name}' updated successfully!",
+            "id": venue_id
+        }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating venue: {str(e)}")
+
+@app.delete("/venues/{venue_id}")
+async def delete_venue(venue_id: int):
+    """Delete a venue"""
+    try:
+        if not db:
+            raise HTTPException(status_code=503, detail="Database not available")
+        
+        # Check if venue exists
+        venues = db.get_all_venues()
+        venue = next((v for v in venues if v.venue_id == venue_id), None)
+        if not venue:
+            raise HTTPException(status_code=404, detail="Venue not found")
+        
+        # Delete venue from database
+        import sqlite3
+        conn = sqlite3.connect(db.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute("DELETE FROM venues WHERE id = ?", (venue_id,))
+        
+        conn.commit()
+        conn.close()
+        
+        # Clear cache
+        _get_cached_venues.cache_clear()
+        
+        return {
+            "success": True,
+            "message": f"Venue '{venue.name}' deleted successfully!"
+        }
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting venue: {str(e)}")
 
 @app.get("/debug")
 async def debug():

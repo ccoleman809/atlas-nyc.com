@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas-NYC Admin - Venue Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .admin-header {
+            background: #1a1a1a;
+            color: white;
+            padding: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .admin-header h1 {
+            font-size: 1.5rem;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-danger {
+            background: #e53e3e;
+            color: white;
+        }
+
+        .venue-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .venue-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .venue-card:hover {
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+
+        .venue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .venue-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.25rem;
+        }
+
+        .venue-meta {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .venue-details {
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .venue-details p {
+            margin: 0.5rem 0;
+        }
+
+        .venue-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .search-box {
+            margin-bottom: 2rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .venue-id {
+            background: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .venue-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="admin-header">
+        <h1>Atlas-NYC Admin - Venue Management</h1>
+    </header>
+
+    <div class="container">
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="showAddModal()">+ Add New Venue</button>
+            <a href="/atlas" class="btn btn-secondary">View Public Site</a>
+        </div>
+
+        <div class="search-box">
+            <input type="text" class="search-input" id="searchInput" placeholder="Search venues by name, neighborhood, or type..." onkeyup="filterVenues()">
+        </div>
+
+        <div class="venue-grid" id="venueGrid">
+            <!-- Venues will be loaded here -->
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="venueModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Add New Venue</h2>
+            
+            <form id="venueForm">
+                <input type="hidden" id="venueId">
+                
+                <div class="form-group">
+                    <label for="name">Venue Name *</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="neighborhood">Neighborhood *</label>
+                    <select id="neighborhood" name="neighborhood" required>
+                        <option value="">Select a neighborhood</option>
+                        <option value="Bushwick">Bushwick</option>
+                        <option value="Williamsburg">Williamsburg</option>
+                        <option value="East Village">East Village</option>
+                        <option value="Lower East Side">Lower East Side</option>
+                        <option value="West Village">West Village</option>
+                        <option value="Chelsea">Chelsea</option>
+                        <option value="Meatpacking">Meatpacking</option>
+                        <option value="SoHo">SoHo</option>
+                        <option value="Tribeca">Tribeca</option>
+                        <option value="Midtown">Midtown</option>
+                        <option value="Upper East Side">Upper East Side</option>
+                        <option value="Upper West Side">Upper West Side</option>
+                        <option value="Harlem">Harlem</option>
+                        <option value="Brooklyn">Brooklyn (Other)</option>
+                        <option value="Queens">Queens</option>
+                        <option value="Bronx">Bronx</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="instagram_handle">Instagram Handle * (without @)</label>
+                    <input type="text" id="instagram_handle" name="instagram_handle" required placeholder="venuehandle">
+                </div>
+
+                <div class="form-group">
+                    <label for="venue_type">Venue Type *</label>
+                    <select id="venue_type" name="venue_type" required>
+                        <option value="">Select a type</option>
+                        <option value="nightclub">Nightclub</option>
+                        <option value="bar">Bar</option>
+                        <option value="cocktail_bar">Cocktail Bar</option>
+                        <option value="dive_bar">Dive Bar</option>
+                        <option value="rooftop_bar">Rooftop Bar</option>
+                        <option value="lounge">Lounge</option>
+                        <option value="live_music_venue">Live Music Venue</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="address">Address</label>
+                    <input type="text" id="address" name="address" placeholder="123 Main St, New York, NY 10001">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" name="description" placeholder="Brief description of the venue..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="busy_nights">Busy Nights</label>
+                    <input type="text" id="busy_nights" name="busy_nights" placeholder="Thu,Fri,Sat">
+                </div>
+
+                <div class="form-group">
+                    <label for="price_range">Price Range</label>
+                    <select id="price_range" name="price_range">
+                        <option value="">Select price range</option>
+                        <option value="$">$ - Budget-friendly</option>
+                        <option value="$$">$$ - Moderate</option>
+                        <option value="$$$">$$$ - Expensive</option>
+                        <option value="$$$$">$$$$ - Very expensive</option>
+                    </select>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Venue</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let allVenues = [];
+        let editingVenueId = null;
+
+        // Load venues on page load
+        document.addEventListener('DOMContentLoaded', loadVenues);
+
+        async function loadVenues() {
+            try {
+                const response = await fetch('/venues');
+                const data = await response.json();
+                allVenues = data.venues || [];
+                displayVenues(allVenues);
+            } catch (error) {
+                console.error('Error loading venues:', error);
+                alert('Failed to load venues');
+            }
+        }
+
+        function displayVenues(venues) {
+            const grid = document.getElementById('venueGrid');
+            grid.innerHTML = '';
+
+            venues.forEach(venue => {
+                const card = document.createElement('div');
+                card.className = 'venue-card';
+                card.innerHTML = `
+                    <div class="venue-header">
+                        <div>
+                            <h3 class="venue-name">${venue.name}</h3>
+                            <p class="venue-meta">${formatVenueType(venue.venue_type)} • ${venue.neighborhood}</p>
+                        </div>
+                        <span class="venue-id">ID: ${venue.id}</span>
+                    </div>
+                    <div class="venue-details">
+                        ${venue.description ? `<p>${venue.description}</p>` : ''}
+                        ${venue.address ? `<p><strong>Address:</strong> ${venue.address}</p>` : ''}
+                        ${venue.price_range ? `<p><strong>Price:</strong> ${venue.price_range}</p>` : ''}
+                        ${venue.busy_nights ? `<p><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
+                        <p><strong>Instagram:</strong> <a href="https://instagram.com/${venue.instagram_handle}" target="_blank">@${venue.instagram_handle}</a></p>
+                    </div>
+                    <div class="venue-actions">
+                        <button class="btn btn-secondary" onclick="editVenue(${venue.id})">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteVenue(${venue.id}, '${venue.name}')">Delete</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterVenues() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = allVenues.filter(venue => 
+                venue.name.toLowerCase().includes(searchTerm) ||
+                venue.neighborhood.toLowerCase().includes(searchTerm) ||
+                venue.venue_type.toLowerCase().includes(searchTerm) ||
+                (venue.description && venue.description.toLowerCase().includes(searchTerm))
+            );
+            displayVenues(filtered);
+        }
+
+        function showAddModal() {
+            editingVenueId = null;
+            document.getElementById('modalTitle').textContent = 'Add New Venue';
+            document.getElementById('venueForm').reset();
+            document.getElementById('venueModal').style.display = 'block';
+        }
+
+        function editVenue(venueId) {
+            editingVenueId = venueId;
+            const venue = allVenues.find(v => v.id === venueId);
+            if (!venue) return;
+
+            document.getElementById('modalTitle').textContent = 'Edit Venue';
+            document.getElementById('venueId').value = venue.id;
+            document.getElementById('name').value = venue.name;
+            document.getElementById('neighborhood').value = venue.neighborhood;
+            document.getElementById('instagram_handle').value = venue.instagram_handle;
+            document.getElementById('venue_type').value = venue.venue_type;
+            document.getElementById('address').value = venue.address || '';
+            document.getElementById('description').value = venue.description || '';
+            document.getElementById('busy_nights').value = venue.busy_nights || '';
+            document.getElementById('price_range').value = venue.price_range || '';
+            
+            document.getElementById('venueModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('venueModal').style.display = 'none';
+            document.getElementById('venueForm').reset();
+            editingVenueId = null;
+        }
+
+        document.getElementById('venueForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            
+            try {
+                let response;
+                if (editingVenueId) {
+                    // Update venue
+                    response = await fetch(`/venues/${editingVenueId}`, {
+                        method: 'PUT',
+                        body: formData
+                    });
+                } else {
+                    // Create new venue
+                    response = await fetch('/venues', {
+                        method: 'POST',
+                        body: formData
+                    });
+                }
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert(result.message);
+                    closeModal();
+                    loadVenues();
+                } else {
+                    alert(result.detail || 'Error saving venue');
+                }
+            } catch (error) {
+                console.error('Error saving venue:', error);
+                alert('Failed to save venue');
+            }
+        });
+
+        async function deleteVenue(venueId, venueName) {
+            if (!confirm(`Are you sure you want to delete "${venueName}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/venues/${venueId}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert(result.message);
+                    loadVenues();
+                } else {
+                    alert(result.detail || 'Error deleting venue');
+                }
+            } catch (error) {
+                console.error('Error deleting venue:', error);
+                alert('Failed to delete venue');
+            }
+        }
+
+        function formatVenueType(type) {
+            return type.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('venueModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+</body>
+</html>
