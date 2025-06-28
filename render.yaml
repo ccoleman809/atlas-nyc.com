@@ -4,7 +4,7 @@ services:
     name: atlas-nyc-api
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn api_server:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    startCommand: python production_api.py
     envVars:
       - key: ENVIRONMENT
         value: production
