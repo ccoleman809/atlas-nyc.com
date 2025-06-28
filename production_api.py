@@ -3,13 +3,14 @@
 Production-ready Atlas-NYC API with database connection
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 import os
 from datetime import datetime
-from venue_db import VenueDatabase
+from venue_db import VenueDatabase, Venue
 from pathlib import Path
+from typing import Optional
 
 # Create FastAPI app
 app = FastAPI(title="Atlas-NYC API", version="2.0.0")
@@ -167,6 +168,66 @@ async def get_atlas_interface():
             return HTMLResponse(content=f.read())
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Atlas interface not found")
+
+@app.get("/admin", response_class=HTMLResponse)
+async def get_admin_portal():
+    """Serve the mobile admin portal for adding venues"""
+    try:
+        with open("mobile_portal.html", "r") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Admin portal not found")
+
+@app.post("/venues")
+async def create_venue(
+    name: str = Form(...),
+    neighborhood: str = Form(...),
+    instagram_handle: str = Form(...),
+    venue_type: str = Form(...),
+    address: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    busy_nights: Optional[str] = Form(None),
+    price_range: Optional[str] = Form(None)
+):
+    """Create a new venue"""
+    try:
+        if not db:
+            raise HTTPException(status_code=503, detail="Database not available")
+        
+        # Clean instagram handle
+        instagram_handle = instagram_handle.strip().replace('@', '')
+        
+        # Create venue object
+        venue = Venue(
+            name=name.strip(),
+            neighborhood=neighborhood.strip(),
+            instagram_handle=instagram_handle,
+            venue_type=venue_type.strip(),
+            address=address.strip() if address else None,
+            description=description.strip() if description else None,
+            busy_nights=busy_nights.strip() if busy_nights else None,
+            price_range=price_range.strip() if price_range else None
+        )
+        
+        # Add to database
+        venue_id = db.add_venue(venue)
+        
+        if venue_id > 0:
+            # Clear cache to show new venue
+            _get_cached_venues.cache_clear()
+            
+            return {
+                "success": True,
+                "message": f"Venue '{name}' added successfully!",
+                "id": venue_id
+            }
+        else:
+            raise HTTPException(status_code=400, detail="Venue with this Instagram handle already exists")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error creating venue: {str(e)}")
 
 @app.get("/debug")
 async def debug():
