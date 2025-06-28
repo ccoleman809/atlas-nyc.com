@@ -502,6 +502,7 @@
         <section class="content-section" id="neighborhoods">
             <h2 class="section-title">Explore by Neighborhood</h2>
             <div class="neighborhood-tags">
+                <a href="#" onclick="showAllVenues(); document.getElementById('results').style.display='none'; return false;" class="neighborhood-tag" style="background: #ffd700; color: #000;">Show All</a>
                 <a href="#" onclick="filterByNeighborhood('Bushwick'); return false;" class="neighborhood-tag">Bushwick</a>
                 <a href="#" onclick="filterByNeighborhood('Williamsburg'); return false;" class="neighborhood-tag">Williamsburg</a>
                 <a href="#" onclick="filterByNeighborhood('East Village'); return false;" class="neighborhood-tag">East Village</a>
@@ -523,6 +524,13 @@
                     <button class="map-control-btn" onclick="filterByType('bar')">Bars</button>
                     <button class="map-control-btn" onclick="filterByType('rooftop')">Rooftops</button>
                 </div>
+            </div>
+        </section>
+        
+        <section class="content-section" id="results" style="display: none;">
+            <h2 class="section-title" id="results-title">Search Results</h2>
+            <div class="venue-grid" id="results-container">
+                <!-- Results will be populated here -->
             </div>
         </section>
     </main>
@@ -581,15 +589,15 @@
                         (venue.description && venue.description.toLowerCase().includes(searchTerm))
                     );
                     
-                    // Display results on map
+                    // Display results
                     if (results.length > 0) {
+                        displayVenueResults(results, `Search results for "${searchTerm}"`);
                         addMarkersToMap(results);
                         // Zoom to first result
                         if (results[0].lat && results[0].lng) {
                             map.setCenter({lat: results[0].lat, lng: results[0].lng});
                             map.setZoom(14);
                         }
-                        alert(`Found ${results.length} venues matching "${searchTerm}"`);
                     } else {
                         alert(`No venues found matching "${searchTerm}"`);
                     }
@@ -763,10 +771,18 @@
                     // Info window
                     const infoWindow = new google.maps.InfoWindow({
                         content: `
-                            <div style="max-width: 200px;">
-                                <h3 style="margin: 0 0 5px 0; color: #333;">${venue.name}</h3>
-                                <p style="margin: 0 0 5px 0; color: #666;">${venue.venue_type} • ${venue.neighborhood}</p>
-                                ${venue.description ? `<p style="margin: 0; font-size: 12px; color: #888;">${venue.description.substring(0, 80)}...</p>` : ''}
+                            <div style="max-width: 250px; padding: 10px;">
+                                <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${venue.name}</h3>
+                                <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
+                                    <strong>${formatVenueType(venue.venue_type)}</strong> • ${venue.neighborhood}
+                                </p>
+                                ${venue.description ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">${venue.description}</p>` : ''}
+                                ${venue.price_range ? `<p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Price:</strong> ${venue.price_range}</p>` : ''}
+                                ${venue.busy_nights ? `<p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
+                                <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
+                                   style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                    View on Instagram →
+                                </a>
                             </div>
                         `
                     });
@@ -805,6 +821,7 @@
         function filterByNeighborhood(neighborhood) {
             const filtered = allVenues.filter(venue => venue.neighborhood === neighborhood);
             if (filtered.length > 0) {
+                displayVenueResults(filtered, `${neighborhood} Venues`);
                 addMarkersToMap(filtered);
                 // Center map on neighborhood
                 const bounds = new google.maps.LatLngBounds();
@@ -820,6 +837,9 @@
                     tag.style.background = tag.textContent === neighborhood ? '#ffd700' : '#1a1a1a';
                     tag.style.color = tag.textContent === neighborhood ? '#000' : 'white';
                 });
+                
+                // Scroll to results
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
             } else {
                 alert(`No venues found in ${neighborhood}`);
             }
@@ -833,6 +853,63 @@
                     btn.classList.add('active');
                 }
             });
+        }
+        
+        // Display venue results as cards
+        function displayVenueResults(venues, title) {
+            const resultsSection = document.getElementById('results');
+            const resultsTitle = document.getElementById('results-title');
+            const resultsContainer = document.getElementById('results-container');
+            
+            resultsTitle.textContent = title;
+            resultsContainer.innerHTML = '';
+            
+            venues.forEach(venue => {
+                const venueCard = document.createElement('div');
+                venueCard.className = 'venue-card';
+                venueCard.innerHTML = `
+                    <div class="venue-image">
+                        <div style="background: linear-gradient(135deg, #667eea, #764ba2); height: 100%; display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; font-weight: bold;">
+                            ${venue.name.charAt(0)}
+                        </div>
+                    </div>
+                    <div class="venue-info">
+                        <h3 class="venue-name">${venue.name}</h3>
+                        <p class="venue-type">${formatVenueType(venue.venue_type)} • ${venue.neighborhood}</p>
+                        ${venue.description ? `<p style="font-size: 0.9rem; color: #666; margin: 0.5rem 0;">${venue.description}</p>` : ''}
+                        ${venue.price_range ? `<p style="font-size: 0.9rem; margin: 0.5rem 0;">Price: ${venue.price_range}</p>` : ''}
+                        ${venue.busy_nights ? `<p style="font-size: 0.9rem; margin: 0.5rem 0;">Busy nights: ${venue.busy_nights}</p>` : ''}
+                        <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" style="display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600;">
+                            @${venue.instagram_handle} →
+                        </a>
+                    </div>
+                `;
+                
+                // Add click handler to center map on venue
+                venueCard.addEventListener('click', () => {
+                    if (venue.lat && venue.lng) {
+                        map.setCenter({lat: venue.lat, lng: venue.lng});
+                        map.setZoom(16);
+                        // Find and open the marker's info window
+                        markers.forEach(marker => {
+                            if (marker.getTitle() === venue.name) {
+                                google.maps.event.trigger(marker, 'click');
+                            }
+                        });
+                    }
+                });
+                
+                resultsContainer.appendChild(venueCard);
+            });
+            
+            resultsSection.style.display = 'block';
+        }
+        
+        // Format venue type for display
+        function formatVenueType(type) {
+            return type.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' ');
         }
     </script>
 </body>
