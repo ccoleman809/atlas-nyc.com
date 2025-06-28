@@ -502,14 +502,14 @@
         <section class="content-section" id="neighborhoods">
             <h2 class="section-title">Explore by Neighborhood</h2>
             <div class="neighborhood-tags">
-                <a href="/neighborhoods/soho" class="neighborhood-tag">SoHo</a>
-                <a href="/neighborhoods/east-village" class="neighborhood-tag">East Village</a>
-                <a href="/neighborhoods/williamsburg" class="neighborhood-tag">Williamsburg</a>
-                <a href="/neighborhoods/meatpacking" class="neighborhood-tag">Meatpacking</a>
-                <a href="/neighborhoods/lower-east-side" class="neighborhood-tag">Lower East Side</a>
-                <a href="/neighborhoods/tribeca" class="neighborhood-tag">Tribeca</a>
-                <a href="/neighborhoods/chelsea" class="neighborhood-tag">Chelsea</a>
-                <a href="/neighborhoods/midtown" class="neighborhood-tag">Midtown</a>
+                <a href="#" onclick="filterByNeighborhood('Bushwick'); return false;" class="neighborhood-tag">Bushwick</a>
+                <a href="#" onclick="filterByNeighborhood('Williamsburg'); return false;" class="neighborhood-tag">Williamsburg</a>
+                <a href="#" onclick="filterByNeighborhood('East Village'); return false;" class="neighborhood-tag">East Village</a>
+                <a href="#" onclick="filterByNeighborhood('Lower East Side'); return false;" class="neighborhood-tag">Lower East Side</a>
+                <a href="#" onclick="filterByNeighborhood('West Village'); return false;" class="neighborhood-tag">West Village</a>
+                <a href="#" onclick="filterByNeighborhood('Chelsea'); return false;" class="neighborhood-tag">Chelsea</a>
+                <a href="#" onclick="filterByNeighborhood('Meatpacking'); return false;" class="neighborhood-tag">Meatpacking</a>
+                <a href="#" onclick="filterByNeighborhood('SoHo'); return false;" class="neighborhood-tag">SoHo</a>
             </div>
         </section>
 
@@ -564,22 +564,39 @@
         }
         
         // Search functionality
-        function performSearch() {
-            const searchTerm = document.getElementById('search-input').value.trim();
+        async function performSearch() {
+            const searchTerm = document.getElementById('search-input').value.trim().toLowerCase();
             if (searchTerm) {
-                // Track search
-                fetch('/api/track/search', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        search_term: searchTerm,
-                        search_type: 'general',
-                        results_count: 0
-                    })
-                }).catch(console.error);
-                
-                // Redirect to search results (you'd implement this page)
-                window.location.href = `/search?q=${encodeURIComponent(searchTerm)}`;
+                try {
+                    // Search venues
+                    const response = await fetch('/venues');
+                    const data = await response.json();
+                    const venues = data.venues || [];
+                    
+                    // Filter venues by search term
+                    const results = venues.filter(venue => 
+                        venue.name.toLowerCase().includes(searchTerm) ||
+                        venue.neighborhood.toLowerCase().includes(searchTerm) ||
+                        venue.venue_type.toLowerCase().includes(searchTerm) ||
+                        (venue.description && venue.description.toLowerCase().includes(searchTerm))
+                    );
+                    
+                    // Display results on map
+                    if (results.length > 0) {
+                        addMarkersToMap(results);
+                        // Zoom to first result
+                        if (results[0].lat && results[0].lng) {
+                            map.setCenter({lat: results[0].lat, lng: results[0].lng});
+                            map.setZoom(14);
+                        }
+                        alert(`Found ${results.length} venues matching "${searchTerm}"`);
+                    } else {
+                        alert(`No venues found matching "${searchTerm}"`);
+                    }
+                } catch (error) {
+                    console.error('Search error:', error);
+                    alert('Search is currently unavailable');
+                }
             }
         }
         
@@ -593,7 +610,7 @@
         // Load venues
         async function loadVenues() {
             try {
-                const response = await fetch('/api/venues');
+                const response = await fetch('/venues');
                 const venues = await response.json();
                 
                 const container = document.getElementById('venues-container');
@@ -783,6 +800,29 @@
             const filtered = allVenues.filter(venue => venue.venue_type.includes(type));
             addMarkersToMap(filtered);
             updateActiveButton(type);
+        }
+        
+        function filterByNeighborhood(neighborhood) {
+            const filtered = allVenues.filter(venue => venue.neighborhood === neighborhood);
+            if (filtered.length > 0) {
+                addMarkersToMap(filtered);
+                // Center map on neighborhood
+                const bounds = new google.maps.LatLngBounds();
+                filtered.forEach(venue => {
+                    if (venue.lat && venue.lng) {
+                        bounds.extend(new google.maps.LatLng(venue.lat, venue.lng));
+                    }
+                });
+                map.fitBounds(bounds);
+                
+                // Update neighborhood tags visually
+                document.querySelectorAll('.neighborhood-tag').forEach(tag => {
+                    tag.style.background = tag.textContent === neighborhood ? '#ffd700' : '#1a1a1a';
+                    tag.style.color = tag.textContent === neighborhood ? '#000' : 'white';
+                });
+            } else {
+                alert(`No venues found in ${neighborhood}`);
+            }
         }
 
         function updateActiveButton(activeType) {
