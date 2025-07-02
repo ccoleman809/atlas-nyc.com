@@ -520,7 +520,7 @@
         <section class="content-section" id="neighborhoods">
             <h2 class="section-title">Explore by Neighborhood</h2>
             <div class="neighborhood-tags">
-                <a href="#" onclick="showAllVenues(); document.getElementById('results').style.display='none'; return false;" class="neighborhood-tag" style="background: #ffd700; color: #000;">Show All</a>
+                <a href="#" onclick="showAllVenuesWithResults(); return false;" class="neighborhood-tag" style="background: #ffd700; color: #000;">Show All</a>
                 <a href="#" onclick="filterByNeighborhood('Bushwick'); return false;" class="neighborhood-tag">Bushwick</a>
                 <a href="#" onclick="filterByNeighborhood('Williamsburg'); return false;" class="neighborhood-tag">Williamsburg</a>
                 <a href="#" onclick="filterByNeighborhood('East Village'); return false;" class="neighborhood-tag">East Village</a>
@@ -600,13 +600,13 @@
             const searchTerm = document.getElementById('search-input').value.trim().toLowerCase();
             if (searchTerm) {
                 try {
-                    // Search venues
-                    const response = await fetch('/venues?per_page=1000');
-                    const data = await response.json();
-                    const venues = data.venues || [];
+                    // Ensure allVenues is loaded
+                    if (allVenues.length === 0) {
+                        await loadVenuesForMap();
+                    }
                     
                     // Filter venues by search term
-                    const results = venues.filter(venue => 
+                    const results = allVenues.filter(venue => 
                         venue.name.toLowerCase().includes(searchTerm) ||
                         venue.neighborhood.toLowerCase().includes(searchTerm) ||
                         venue.venue_type.toLowerCase().includes(searchTerm) ||
@@ -629,13 +629,20 @@
                     console.error('Search error:', error);
                     alert('Search is currently unavailable');
                 }
+            } else {
+                alert('Please enter a search term');
             }
         }
         
-        // Handle Enter key in search
-        document.getElementById('search-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                performSearch();
+        // Handle Enter key in search - wrapped in DOMContentLoaded to ensure element exists
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        performSearch();
+                    }
+                });
             }
         });
         
@@ -975,6 +982,28 @@
                     btn.classList.add('active');
                 }
             });
+        }
+
+        function showAllVenuesWithResults() {
+            // Show all venues on map
+            showAllVenues();
+            
+            // Display all venues as cards
+            displayVenueResults(allVenues, 'All NYC Venues');
+            
+            // Reset neighborhood tag styling
+            document.querySelectorAll('.neighborhood-tag').forEach(tag => {
+                if (tag.textContent === 'Show All') {
+                    tag.style.background = '#ffd700';
+                    tag.style.color = '#000';
+                } else {
+                    tag.style.background = '#1a1a1a';
+                    tag.style.color = 'white';
+                }
+            });
+            
+            // Scroll to map first, then results
+            document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
         }
         
         // Display venue results as cards
