@@ -843,20 +843,27 @@
 
             venues.forEach(venue => {
                 if (venue.lat && venue.lng) {
-                    const marker = new google.maps.Marker({
-                        position: { lat: venue.lat, lng: venue.lng },
-                        map: map,
-                        title: venue.name,
-                        icon: {
-                            url: getMarkerIcon(venue.venue_type),
-                            scaledSize: new google.maps.Size(35, 35),
-                            anchor: new google.maps.Point(17, 35)
-                        },
-                        zIndex: 100
-                    });
+                    // Ensure coordinates are numbers
+                    const lat = parseFloat(venue.lat);
+                    const lng = parseFloat(venue.lng);
+                    
+                    console.log('Adding marker for:', venue.name, 'at', {lat, lng});
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const marker = new google.maps.Marker({
+                            position: { lat, lng },
+                            map: map,
+                            title: venue.name,
+                            icon: {
+                                url: getMarkerIcon(venue.venue_type),
+                                scaledSize: new google.maps.Size(35, 35),
+                                anchor: new google.maps.Point(17, 35)
+                            },
+                            zIndex: 100
+                        });
 
-                    // Info window
-                    const infoWindow = new google.maps.InfoWindow({
+                        // Info window
+                        const infoWindow = new google.maps.InfoWindow({
                         content: `
                             <div style="max-width: 250px; padding: 10px;">
                                 <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${venue.name}</h3>
@@ -873,14 +880,19 @@
                                 </a>
                             </div>
                         `
-                    });
+                        });
 
-                    marker.addListener('click', () => {
-                        infoWindow.open(map, marker);
-                        trackEvent('map_marker_click', { venue_id: venue.id, venue_name: venue.name });
-                    });
+                        marker.addListener('click', () => {
+                            infoWindow.open(map, marker);
+                            trackEvent('map_marker_click', { venue_id: venue.id, venue_name: venue.name });
+                        });
 
-                    markers.push(marker);
+                        markers.push(marker);
+                    } else {
+                        console.warn('Invalid coordinates for venue:', venue.name, {lat, lng});
+                    }
+                } else {
+                    console.warn('Venue missing coordinates:', venue.name);
                 }
             });
         }
@@ -1008,23 +1020,92 @@
                 });
                 
                 venueCard.addEventListener('click', () => {
+                    console.log('Venue card clicked:', venue.name);
+                    console.log('Venue coordinates:', {lat: venue.lat, lng: venue.lng, type: typeof venue.lat});
+                    
                     if (venue.lat && venue.lng) {
-                        map.setCenter({lat: venue.lat, lng: venue.lng});
-                        map.setZoom(16);
-                        // Find and open the marker's info window
-                        markers.forEach(marker => {
-                            if (marker.getTitle() === venue.name) {
-                                google.maps.event.trigger(marker, 'click');
-                            }
-                        });
-                        // Scroll to map
-                        document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+                        // Ensure coordinates are numbers
+                        const lat = parseFloat(venue.lat);
+                        const lng = parseFloat(venue.lng);
                         
-                        // Visual feedback
-                        venueCard.style.background = '#f0f8ff';
-                        setTimeout(() => {
-                            venueCard.style.background = 'white';
-                        }, 1000);
+                        console.log('Parsed coordinates:', {lat, lng});
+                        
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            // Center map on venue with smooth animation
+                            map.panTo({lat, lng});
+                            map.setZoom(17);
+                            
+                            // Find existing marker or create new one
+                            let markerFound = false;
+                            let targetMarker = null;
+                            
+                            markers.forEach((marker, index) => {
+                                if (marker.getTitle() === venue.name) {
+                                    targetMarker = marker;
+                                    markerFound = true;
+                                }
+                            });
+                            
+                            if (!markerFound) {
+                                // Create new marker for this venue
+                                targetMarker = new google.maps.Marker({
+                                    position: { lat, lng },
+                                    map: map,
+                                    title: venue.name,
+                                    icon: {
+                                        url: getMarkerIcon(venue.venue_type),
+                                        scaledSize: new google.maps.Size(35, 35),
+                                        anchor: new google.maps.Point(17, 35)
+                                    },
+                                    zIndex: 100
+                                });
+                                
+                                // Add to markers array
+                                markers.push(targetMarker);
+                                console.log('Created new marker for:', venue.name);
+                            }
+                            
+                            // Create and open info window
+                            const infoWindow = new google.maps.InfoWindow({
+                                content: `
+                                    <div style="max-width: 250px; padding: 10px;">
+                                        <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${venue.name}</h3>
+                                        <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
+                                            <strong>${formatVenueType(venue.venue_type)}</strong> • ${venue.neighborhood}
+                                        </p>
+                                        ${venue.address ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-weight: 500;">📍 ${venue.address}</p>` : ''}
+                                        ${venue.description ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">${venue.description}</p>` : ''}
+                                        ${venue.price_range ? `<p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Price:</strong> ${venue.price_range}</p>` : ''}
+                                        ${venue.busy_nights ? `<p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
+                                        <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
+                                           style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                            View on Instagram →
+                                        </a>
+                                    </div>
+                                `
+                            });
+                            
+                            // Open the info window
+                            infoWindow.open(map, targetMarker);
+                            
+                            // Scroll to map with smooth behavior
+                            document.getElementById('map').scrollIntoView({ 
+                                behavior: 'smooth', 
+                                block: 'center' 
+                            });
+                            
+                            // Visual feedback
+                            venueCard.style.background = '#f0f8ff';
+                            setTimeout(() => {
+                                venueCard.style.background = 'white';
+                            }, 1000);
+                        } else {
+                            console.error('Invalid coordinates for venue:', venue.name, {lat, lng});
+                            alert(`Invalid coordinates for ${venue.name}.`);
+                        }
+                    } else {
+                        console.warn('Venue has no coordinates:', venue.name);
+                        alert(`${venue.name} doesn't have map coordinates yet.`);
                     }
                 });
                 

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Import NYC Venues - Atlas-NYC</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .login-form {
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗽 Import NYC Venues</h1>
+        
+        <div class="info">
+            <p><strong>This will add 25+ essential NYC nightlife venues to your database.</strong></p>
+            <p>Venues include popular spots from Manhattan and Brooklyn neighborhoods.</p>
+        </div>
+
+        <div class="login-form">
+            <h3>Admin Credentials Required</h3>
+            <input type="text" id="username" placeholder="Username" value="">
+            <input type="password" id="password" placeholder="Password" value="">
+        </div>
+
+        <button id="importBtn" onclick="importVenues()">Import All Venues</button>
+
+        <div id="result" class="result"></div>
+
+        <div class="warning" style="margin-top: 20px;">
+            <p><strong>⚠️ Note:</strong> This is a one-time import. Running it multiple times will skip existing venues.</p>
+        </div>
+    </div>
+
+    <script>
+        async function importVenues() {
+            const btn = document.getElementById('importBtn');
+            const resultDiv = document.getElementById('result');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                resultDiv.className = 'result error';
+                resultDiv.style.display = 'block';
+                resultDiv.innerHTML = '❌ Please enter admin credentials';
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'Importing venues...';
+            
+            resultDiv.className = 'result';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '⏳ Importing venues, please wait...';
+
+            try {
+                const response = await fetch('/admin/import-venues', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(username + ':' + password)
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        ✅ ${data.message}<br>
+                        <strong>Total venues added:</strong> ${data.total_added}<br>
+                        <br>
+                        You can now:
+                        <ul>
+                            <li><a href="/atlas">View the public map</a></li>
+                            <li><a href="/admin">Manage venues in admin panel</a></li>
+                        </ul>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `❌ Error: ${data.detail || 'Import failed'}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `❌ Error: ${error.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Import All Venues';
+            }
+        }
+
+        // Fill in credentials if you want
+        document.getElementById('username').value = 'doughboy809';
+        // Leave password empty for security
+    </script>
+</body>
+</html>

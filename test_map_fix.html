@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Fix Test - Atlas-NYC</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #map { height: 400px; width: 100%; margin: 20px 0; border: 2px solid #ccc; }
+        .venue-card { 
+            background: white; 
+            border: 1px solid #ddd; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .venue-card:hover { background: #f0f8ff; }
+        .test-results { background: #f9f9f9; padding: 15px; margin: 20px 0; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Map Fix Test - Atlas-NYC</h1>
+    
+    <div class="test-results" id="testResults">
+        <h3>Test Results:</h3>
+        <div id="results">Running tests...</div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div id="venues">
+        <h3>Test Venues (click to center map):</h3>
+        <div id="venueList">Loading...</div>
+    </div>
+
+    <script>
+        let map;
+        let markers = [];
+        let testVenues = [];
+
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.style.color = type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue';
+            div.innerHTML = `${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'} ${message}`;
+            results.appendChild(div);
+        }
+
+        function initMap() {
+            addResult('Google Maps API loaded successfully', 'success');
+            
+            // Initialize map
+            map = new google.maps.Map(document.getElementById('map'), {
+                zoom: 12,
+                center: { lat: 40.7589, lng: -73.9851 }
+            });
+            
+            addResult('Map initialized successfully', 'success');
+            
+            // Test venue data
+            testVenueData();
+        }
+
+        async function testVenueData() {
+            try {
+                addResult('Testing venue data from API...', 'info');
+                
+                const response = await fetch('/venues');
+                const data = await response.json();
+                
+                if (response.ok && data.venues) {
+                    testVenues = data.venues;
+                    addResult(`API responded successfully with ${testVenues.length} venues`, 'success');
+                    
+                    // Test coordinate parsing
+                    let coordCount = 0;
+                    testVenues.forEach(venue => {
+                        if (venue.lat && venue.lng) {
+                            const lat = parseFloat(venue.lat);
+                            const lng = parseFloat(venue.lng);
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                coordCount++;
+                            }
+                        }
+                    });
+                    
+                    addResult(`${coordCount}/${testVenues.length} venues have valid coordinates`, coordCount > 0 ? 'success' : 'error');
+                    
+                    // Add markers
+                    addMarkersToMap(testVenues);
+                    
+                    // Create venue cards
+                    createVenueCards(testVenues.slice(0, 5)); // First 5 for testing
+                    
+                } else {
+                    throw new Error('API error: ' + (data.detail || 'Unknown error'));
+                }
+                
+            } catch (error) {
+                addResult('Error fetching venue data: ' + error.message, 'error');
+                
+                // Use sample data for testing
+                testVenues = [
+                    { id: 1, name: "House of Yes", neighborhood: "Bushwick", venue_type: "nightclub", lat: 40.7053, lng: -73.9233 },
+                    { id: 2, name: "Brooklyn Bowl", neighborhood: "Williamsburg", venue_type: "live_music_venue", lat: 40.7220, lng: -73.9575 }
+                ];
+                
+                addResult('Using sample venue data for testing', 'info');
+                addMarkersToMap(testVenues);
+                createVenueCards(testVenues);
+            }
+        }
+
+        function addMarkersToMap(venues) {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+
+            let markerCount = 0;
+            venues.forEach(venue => {
+                if (venue.lat && venue.lng) {
+                    const lat = parseFloat(venue.lat);
+                    const lng = parseFloat(venue.lng);
+                    
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        const marker = new google.maps.Marker({
+                            position: { lat, lng },
+                            map: map,
+                            title: venue.name
+                        });
+
+                        const infoWindow = new google.maps.InfoWindow({
+                            content: `<div><h3>${venue.name}</h3><p>${venue.neighborhood}</p></div>`
+                        });
+
+                        marker.addListener('click', () => {
+                            infoWindow.open(map, marker);
+                        });
+
+                        markers.push(marker);
+                        markerCount++;
+                    }
+                }
+            });
+            
+            addResult(`Added ${markerCount} markers to map`, markerCount > 0 ? 'success' : 'error');
+        }
+
+        function createVenueCards(venues) {
+            const venueList = document.getElementById('venueList');
+            venueList.innerHTML = '';
+            
+            venues.forEach(venue => {
+                const card = document.createElement('div');
+                card.className = 'venue-card';
+                card.innerHTML = `
+                    <h4>${venue.name}</h4>
+                    <p>${venue.neighborhood} • ${venue.venue_type}</p>
+                    <p>Coordinates: ${venue.lat}, ${venue.lng}</p>
+                `;
+                
+                card.addEventListener('click', () => {
+                    addResult(`Clicked venue: ${venue.name}`, 'info');
+                    
+                    if (venue.lat && venue.lng) {
+                        const lat = parseFloat(venue.lat);
+                        const lng = parseFloat(venue.lng);
+                        
+                        if (!isNaN(lat) && !isNaN(lng)) {
+                            map.panTo({lat, lng});
+                            map.setZoom(17);
+                            
+                            // Find and click marker
+                            const marker = markers.find(m => m.getTitle() === venue.name);
+                            if (marker) {
+                                google.maps.event.trigger(marker, 'click');
+                                addResult(`Successfully centered map on ${venue.name}`, 'success');
+                            } else {
+                                addResult(`Marker not found for ${venue.name}`, 'error');
+                            }
+                        } else {
+                            addResult(`Invalid coordinates for ${venue.name}`, 'error');
+                        }
+                    } else {
+                        addResult(`No coordinates for ${venue.name}`, 'error');
+                    }
+                });
+                
+                venueList.appendChild(card);
+            });
+        }
+
+        // Error handling for Google Maps API
+        window.setTimeout(() => {
+            if (typeof google === 'undefined') {
+                addResult('Google Maps API failed to load', 'error');
+            }
+        }, 5000);
+    </script>
+
+    <!-- Google Maps API -->
+    <script async defer 
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIJcXpuBHBiDhlz2KcfKjkdQn7gYo6iD0&callback=initMap"
+            onerror="addResult('Failed to load Google Maps API script', 'error')">
+    </script>
+</body>
+</html>

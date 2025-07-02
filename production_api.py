@@ -151,20 +151,44 @@ async def get_venues(
                 "price_range": v.price_range
             }
             
-            # Add sample coordinates for map
-            if v.name == "House of Yes":
-                venue_dict.update({"lat": 40.7053, "lng": -73.9233})
-            elif v.name == "Brooklyn Bowl":
-                venue_dict.update({"lat": 40.7220, "lng": -73.9575})
-            elif v.name == "Death & Co":
-                venue_dict.update({"lat": 40.7259, "lng": -73.9846})
-            elif v.name == "Le Bain":
-                venue_dict.update({"lat": 40.7411, "lng": -74.0083})
-            elif v.name == "Beauty & Essex":
-                venue_dict.update({"lat": 40.7204, "lng": -73.9869})
-            else:
-                # Default Manhattan coordinates
-                venue_dict.update({"lat": 40.7589, "lng": -73.9851})
+            # Add coordinates based on venue and neighborhood
+            # Create consistent coordinates by using venue name hash for offset
+            import hashlib
+            
+            neighborhood_coords = {
+                "Bushwick": {"lat": 40.6942, "lng": -73.9249},
+                "Williamsburg": {"lat": 40.7081, "lng": -73.9571},
+                "East Village": {"lat": 40.7264, "lng": -73.9818},
+                "Lower East Side": {"lat": 40.7209, "lng": -73.9896},
+                "West Village": {"lat": 40.7335, "lng": -74.0027},
+                "Chelsea": {"lat": 40.7465, "lng": -73.9972},
+                "Meatpacking": {"lat": 40.7411, "lng": -74.0078},
+                "SoHo": {"lat": 40.7230, "lng": -74.0020},
+                "Tribeca": {"lat": 40.7195, "lng": -74.0089},
+                "Midtown": {"lat": 40.7505, "lng": -73.9934},
+                "Upper East Side": {"lat": 40.7736, "lng": -73.9566},
+                "Upper West Side": {"lat": 40.7870, "lng": -73.9754},
+                "Park Slope": {"lat": 40.6736, "lng": -73.9780},
+                "Crown Heights": {"lat": 40.6677, "lng": -73.9442},
+                "Long Island City": {"lat": 40.7505, "lng": -73.9370},
+                "Brooklyn": {"lat": 40.6782, "lng": -73.9442},
+                "Queens": {"lat": 40.7282, "lng": -73.7949},
+                "Bronx": {"lat": 40.8448, "lng": -73.8648},
+                "Harlem": {"lat": 40.8116, "lng": -73.9465}
+            }
+            
+            # Get coordinates for the venue's neighborhood
+            coords = neighborhood_coords.get(v.neighborhood, {"lat": 40.7589, "lng": -73.9851})
+            
+            # Create consistent offset using venue name hash (so same venue always gets same coordinates)
+            venue_hash = hashlib.md5(v.name.encode()).hexdigest()
+            lat_offset = (int(venue_hash[:4], 16) / 65535.0 - 0.5) * 0.006  # ~600m radius
+            lng_offset = (int(venue_hash[4:8], 16) / 65535.0 - 0.5) * 0.006
+            
+            venue_dict.update({
+                "lat": round(coords["lat"] + lat_offset, 6),
+                "lng": round(coords["lng"] + lng_offset, 6)
+            })
             
             venues_data.append(venue_dict)
         
@@ -242,8 +266,8 @@ async def create_venue(
         venue_id = db.add_venue(venue)
         
         if venue_id > 0:
-            # Clear cache to show new venue
-            _get_cached_venues.cache_clear()
+            # Clear cache to show new venue (disabled for now)
+            # _get_cached_venues.cache_clear()
             
             return {
                 "success": True,
@@ -311,8 +335,8 @@ async def update_venue(
         conn.commit()
         conn.close()
         
-        # Clear cache to show updated venue
-        _get_cached_venues.cache_clear()
+        # Clear cache to show updated venue (disabled for now)
+        # _get_cached_venues.cache_clear()
         
         return {
             "success": True,
@@ -348,8 +372,8 @@ async def delete_venue(venue_id: int, admin_user: str = Depends(verify_admin)):
         conn.commit()
         conn.close()
         
-        # Clear cache
-        _get_cached_venues.cache_clear()
+        # Clear cache if it exists
+        # _get_cached_venues.cache_clear()
         
         return {
             "success": True,
@@ -360,6 +384,66 @@ async def delete_venue(venue_id: int, admin_user: str = Depends(verify_admin)):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error deleting venue: {str(e)}")
+
+@app.post("/admin/import-venues")
+async def import_all_venues(admin_user: str = Depends(verify_admin)):
+    """One-time import of all NYC venues"""
+    if not db:
+        raise HTTPException(status_code=503, detail="Database not available")
+    
+    venues_to_add = [
+        # Essential NYC Venues
+        ("Death & Co", "East Village", "deathandcompany", "cocktail_bar", "433 E 6th St", "Award-winning cocktail bar", "Thu,Fri,Sat", "$$$"),
+        ("Please Don't Tell", "East Village", "pdtnyc", "cocktail_bar", "113 St Marks Pl", "Speakeasy through phone booth", "Fri,Sat", "$$$"),
+        ("The Box", "Lower East Side", "theboxnyc", "nightclub", "189 Chrystie St", "Burlesque and variety shows", "Thu,Fri,Sat", "$$$$"),
+        ("Mr. Purple", "Lower East Side", "mrpurplenyc", "rooftop_bar", "180 Orchard St", "Rooftop bar with city views", "Fri,Sat,Sun", "$$$"),
+        ("Employees Only", "West Village", "employeesonlynyc", "cocktail_bar", "510 Hudson St", "Prohibition-style cocktail bar", "Thu,Fri,Sat", "$$$"),
+        ("The Django", "West Village", "thedjangonyc", "live_music_venue", "2 6th Ave", "Jazz club and cocktail bar", "Wed,Thu,Fri,Sat", "$$$"),
+        ("Blue Note", "West Village", "bluenotenyc", "culture", "131 W 3rd St", "Legendary jazz club", "Daily", "$$$"),
+        ("Comedy Cellar", "West Village", "comedycellar", "culture", "117 MacDougal St", "Famous comedy club", "Daily", "$$"),
+        ("Le Bain", "Meatpacking", "lebainnewyork", "rooftop_bar", "848 Washington St", "Rooftop disco with pool", "Thu,Fri,Sat", "$$$$"),
+        ("Gallow Green", "Chelsea", "gallowgreen", "rooftop_bar", "542 W 27th St", "Rooftop garden bar", "Wed,Thu,Fri,Sat", "$$$"),
+        ("Rainbow Room", "Midtown", "rainbowroomnyc", "lounge", "30 Rockefeller Plaza", "Iconic supper club", "Fri,Sat", "$$$$"),
+        ("Birdland", "Midtown", "birdlandjazz", "live_music_venue", "315 W 44th St", "Historic jazz club", "Daily", "$$$"),
+        ("Bemelmans Bar", "Upper East Side", "bemelmansbar", "cocktail_bar", "35 E 76th St", "Classic piano bar", "Tue-Sat", "$$$$"),
+        ("Brooklyn Bowl", "Williamsburg", "brooklynbowl", "live_music_venue", "61 Wythe Ave", "Bowling and music venue", "Thu,Fri,Sat", "$$"),
+        ("Output", "Williamsburg", "outputclub", "nightclub", "74 Wythe Ave", "Underground dance club", "Fri,Sat", "$$$"),
+        ("The Ides", "Williamsburg", "theidesbar", "rooftop_bar", "80 Wythe Ave", "Wythe Hotel rooftop", "Thu-Sun", "$$$"),
+        ("House of Yes", "Bushwick", "houseofyes", "nightclub", "2 Wyckoff Ave", "Creative themed parties", "Thu,Fri,Sat", "$$"),
+        ("Mood Ring", "Bushwick", "moodringbar", "bar", "1260 Myrtle Ave", "Astrology-themed bar", "Wed-Sat", "$$"),
+        ("Union Hall", "Park Slope", "unionhallny", "bar", "702 Union St", "Bar with bocce courts", "Thu,Fri,Sat", "$$"),
+        ("Dutch Kills", "Long Island City", "dutchkillsbar", "cocktail_bar", "27-24 Jackson Ave", "Craft cocktail bar", "Wed-Sat", "$$"),
+        ("Westlight", "Williamsburg", "westlightnyc", "rooftop_bar", "111 N 12th St", "22nd floor rooftop bar", "Wed-Sat", "$$$"),
+        ("Baby's All Right", "Williamsburg", "babysallright", "live_music_venue", "146 Broadway", "Music venue and restaurant", "Wed-Sat", "$$"),
+        ("Sleep No More", "Chelsea", "sleepnomorenyc", "culture", "530 W 27th St", "Immersive theater experience", "Wed-Sun", "$$$$"),
+        ("Attaboy", "Lower East Side", "attaboy_ny", "cocktail_bar", "134 Eldridge St", "No-menu craft cocktails", "Wed-Sat", "$$$"),
+        ("Little Branch", "West Village", "littlebranchnyc", "cocktail_bar", "20 7th Ave S", "Jazz and cocktails", "Daily", "$$"),
+    ]
+    
+    added = 0
+    for venue_data in venues_to_add:
+        try:
+            venue = Venue(
+                name=venue_data[0],
+                neighborhood=venue_data[1],
+                instagram_handle=venue_data[2],
+                venue_type=venue_data[3],
+                address=venue_data[4],
+                description=venue_data[5],
+                busy_nights=venue_data[6],
+                price_range=venue_data[7]
+            )
+            result = db.add_venue(venue)
+            if result > 0:
+                added += 1
+        except Exception as e:
+            continue
+    
+    return {
+        "success": True,
+        "message": f"Import complete! Added {added} new venues.",
+        "total_added": added
+    }
 
 @app.get("/debug")
 async def debug():

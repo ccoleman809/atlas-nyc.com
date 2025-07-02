@@ -334,6 +334,7 @@
         <div class="container">
         <div class="action-buttons">
             <button class="btn btn-primary" onclick="showAddModal()">+ Add New Venue</button>
+            <button class="btn btn-primary" onclick="importAllVenues()" style="background: #805AD5;">🚀 Import All Venues</button>
             <a href="/atlas" class="btn btn-secondary">View Public Site</a>
         </div>
 
@@ -685,6 +686,32 @@
             const modal = document.getElementById('venueModal');
             if (event.target === modal) {
                 closeModal();
+            }
+        }
+
+        async function importAllVenues() {
+            if (!confirm('This will import 25+ popular NYC venues. Continue?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/import-venues', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Basic ' + sessionStorage.getItem('atlas_admin_auth')
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    alert(`Success! ${data.message}\nTotal venues added: ${data.total_added}`);
+                    loadVenues(); // Reload the venue list
+                } else {
+                    alert(`Error: ${data.detail || 'Import failed'}`);
+                }
+            } catch (error) {
+                alert(`Error importing venues: ${error.message}`);
             }
         }
     </script>

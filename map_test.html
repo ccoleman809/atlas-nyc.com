@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Map Diagnostic Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #map { height: 400px; width: 100%; margin: 20px 0; border: 2px solid #ccc; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Atlas-NYC Map Diagnostic</h1>
+    
+    <div id="status-container">
+        <div class="status info">🔄 Running diagnostics...</div>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div id="venue-status">
+        <h3>Venue Data Test:</h3>
+        <div id="venue-info">Loading...</div>
+    </div>
+
+    <script>
+        let diagnosticResults = [];
+        let map;
+
+        function addStatus(message, type = 'info') {
+            const container = document.getElementById('status-container');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            container.appendChild(div);
+            console.log(message);
+        }
+
+        // Test 1: Check if Google Maps API loads
+        function initMap() {
+            addStatus('✅ Google Maps API loaded successfully', 'success');
+            
+            try {
+                // Test 2: Initialize map
+                map = new google.maps.Map(document.getElementById('map'), {
+                    zoom: 12,
+                    center: { lat: 40.7589, lng: -73.9851 } // Times Square
+                });
+                addStatus('✅ Map initialized successfully', 'success');
+                
+                // Test 3: Add a test marker
+                const testMarker = new google.maps.Marker({
+                    position: { lat: 40.7589, lng: -73.9851 },
+                    map: map,
+                    title: 'Test Marker - Times Square'
+                });
+                addStatus('✅ Test marker added successfully', 'success');
+                
+                // Test 4: Test venue data loading
+                testVenueData();
+                
+            } catch (error) {
+                addStatus('❌ Error initializing map: ' + error.message, 'error');
+            }
+        }
+
+        async function testVenueData() {
+            try {
+                addStatus('🔄 Testing venue data from API...', 'info');
+                
+                const response = await fetch('/venues');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addStatus(`✅ API responded successfully with ${data.venues ? data.venues.length : 0} venues`, 'success');
+                    
+                    // Display venue info
+                    const venueInfo = document.getElementById('venue-info');
+                    venueInfo.innerHTML = `
+                        <p><strong>Total venues:</strong> ${data.venues ? data.venues.length : 0}</p>
+                        <p><strong>First 3 venues:</strong></p>
+                        <ul>
+                            ${data.venues ? data.venues.slice(0, 3).map(v => 
+                                `<li>${v.name} - ${v.neighborhood} (${v.lat ? 'Has coordinates' : 'No coordinates'})</li>`
+                            ).join('') : '<li>No venues found</li>'}
+                        </ul>
+                    `;
+                    
+                    // Test adding venue markers
+                    if (data.venues && data.venues.length > 0) {
+                        addVenueMarkers(data.venues.slice(0, 5)); // Test with first 5 venues
+                    }
+                } else {
+                    addStatus(`❌ API error: ${response.status} - ${data.detail || 'Unknown error'}`, 'error');
+                }
+                
+            } catch (error) {
+                addStatus('❌ Error fetching venue data: ' + error.message, 'error');
+                
+                // Test with sample data
+                addStatus('🔄 Testing with sample venue data...', 'info');
+                const sampleVenues = [
+                    { id: 1, name: "House of Yes", neighborhood: "Bushwick", lat: 40.7053, lng: -73.9233 },
+                    { id: 2, name: "Brooklyn Bowl", neighborhood: "Williamsburg", lat: 40.7220, lng: -73.9575 }
+                ];
+                addVenueMarkers(sampleVenues);
+            }
+        }
+
+        function addVenueMarkers(venues) {
+            try {
+                let markersAdded = 0;
+                venues.forEach(venue => {
+                    if (venue.lat && venue.lng) {
+                        const marker = new google.maps.Marker({
+                            position: { lat: venue.lat, lng: venue.lng },
+                            map: map,
+                            title: venue.name
+                        });
+                        markersAdded++;
+                    }
+                });
+                addStatus(`✅ Added ${markersAdded} venue markers to map`, 'success');
+            } catch (error) {
+                addStatus('❌ Error adding venue markers: ' + error.message, 'error');
+            }
+        }
+
+        // Test if Google Maps fails to load
+        window.setTimeout(() => {
+            if (typeof google === 'undefined') {
+                addStatus('❌ Google Maps API failed to load - check API key and network', 'error');
+            }
+        }, 5000);
+    </script>
+
+    <!-- Google Maps API with same key as main site -->
+    <script async defer 
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCIJcXpuBHBiDhlz2KcfKjkdQn7gYo6iD0&libraries=places&callback=initMap"
+            onerror="addStatus('❌ Failed to load Google Maps API script', 'error')">
+    </script>
+</body>
+</html>
