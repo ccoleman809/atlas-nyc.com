@@ -342,6 +342,28 @@
             <input type="text" class="search-input" id="searchInput" placeholder="Search venues by name, neighborhood, or type..." onkeyup="filterVenues()">
         </div>
 
+        <div class="database-stats" id="databaseStats" style="background: #f7fafc; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; text-align: center;">
+            <h3 style="margin: 0 0 0.5rem 0; color: #2d3748;">Database Overview</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                <div style="background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #667eea;" id="totalVenues">-</div>
+                    <div style="font-size: 0.9rem; color: #666;">Total Venues</div>
+                </div>
+                <div style="background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #48bb78;" id="displayedVenues">-</div>
+                    <div style="font-size: 0.9rem; color: #666;">Currently Displayed</div>
+                </div>
+                <div style="background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #ed8936;" id="neighborhoodCount">-</div>
+                    <div style="font-size: 0.9rem; color: #666;">Neighborhoods</div>
+                </div>
+                <div style="background: white; padding: 1rem; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #9f7aea;" id="venueTypeCount">-</div>
+                    <div style="font-size: 0.9rem; color: #666;">Venue Types</div>
+                </div>
+            </div>
+        </div>
+
         <div class="venue-grid" id="venueGrid">
             <!-- Venues will be loaded here -->
         </div>
@@ -525,7 +547,7 @@
             }
             
             try {
-                const response = await fetch('/venues');
+                const response = await fetch('/venues?per_page=1000');
                 const data = await response.json();
                 allVenues = data.venues || [];
                 displayVenues(allVenues);
@@ -564,6 +586,25 @@
                 `;
                 grid.appendChild(card);
             });
+
+            // Update statistics
+            updateDatabaseStats(venues);
+        }
+
+        function updateDatabaseStats(displayedVenues) {
+            // Total venues in database
+            document.getElementById('totalVenues').textContent = allVenues.length;
+            
+            // Currently displayed venues (after search/filter)
+            document.getElementById('displayedVenues').textContent = displayedVenues.length;
+            
+            // Unique neighborhoods
+            const neighborhoods = new Set(allVenues.map(v => v.neighborhood));
+            document.getElementById('neighborhoodCount').textContent = neighborhoods.size;
+            
+            // Unique venue types
+            const venueTypes = new Set(allVenues.map(v => v.venue_type));
+            document.getElementById('venueTypeCount').textContent = venueTypes.size;
         }
 
         function filterVenues() {
