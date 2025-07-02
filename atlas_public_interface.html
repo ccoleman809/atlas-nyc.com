@@ -626,62 +626,55 @@
         
         // Search functionality
         async function performSearch() {
-            const searchTerm = document.getElementById('search-input').value.trim().toLowerCase();
-            if (searchTerm) {
-                try {
-                    console.log('🔍 Searching for:', searchTerm);
-                    
-                    // Ensure allVenues is loaded
-                    if (allVenues.length === 0) {
-                        console.log('📥 Loading venues for search...');
-                        await loadVenuesForSearch();
-                    }
-                    
-                    console.log('📊 Total venues available:', allVenues.length);
-                    
-                    // Filter venues by search term
-                    const results = allVenues.filter(venue => 
-                        venue.name.toLowerCase().includes(searchTerm) ||
-                        venue.neighborhood.toLowerCase().includes(searchTerm) ||
-                        venue.venue_type.toLowerCase().includes(searchTerm) ||
-                        (venue.description && venue.description.toLowerCase().includes(searchTerm))
-                    );
-                    
-                    console.log('🎯 Search results found:', results.length);
-                    
-                    // Display results
-                    if (results.length > 0) {
-                        displayVenueResults(results, `Search results for "${searchTerm}"`);
-                        
-                        // Only try to add map markers if map is loaded
-                        if (typeof addMarkersToMap === 'function' && map) {
-                            addMarkersToMap(results);
-                            // Zoom to first result
-                            if (results[0].lat && results[0].lng) {
-                                map.setCenter({lat: results[0].lat, lng: results[0].lng});
-                                map.setZoom(14);
-                            }
-                        }
-                        
-                        // Track successful search
-                        trackEvent('search_success', { 
-                            search_term: searchTerm, 
-                            results_count: results.length 
-                        });
-                    } else {
-                        alert(`No venues found matching "${searchTerm}"`);
-                        
-                        // Track failed search
-                        trackEvent('search_no_results', { 
-                            search_term: searchTerm 
-                        });
-                    }
-                } catch (error) {
-                    console.error('Search error:', error);
-                    alert('Search is currently unavailable. Please try again.');
-                }
-            } else {
+            console.log('🔍 Search button clicked');
+            
+            const searchInput = document.getElementById('search-input');
+            if (!searchInput) {
+                console.error('❌ Search input not found');
+                return;
+            }
+            
+            const searchTerm = searchInput.value.trim().toLowerCase();
+            console.log('🔍 Search term:', searchTerm);
+            
+            if (!searchTerm) {
                 alert('Please enter a search term');
+                return;
+            }
+            
+            try {
+                // Get venues directly from API
+                console.log('📥 Fetching venues from API...');
+                const response = await fetch('/venues?per_page=1000');
+                
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const venues = data.venues || [];
+                console.log('📊 Total venues from API:', venues.length);
+                
+                // Filter venues by search term
+                const results = venues.filter(venue => 
+                    venue.name.toLowerCase().includes(searchTerm) ||
+                    venue.neighborhood.toLowerCase().includes(searchTerm) ||
+                    venue.venue_type.toLowerCase().includes(searchTerm) ||
+                    (venue.description && venue.description.toLowerCase().includes(searchTerm))
+                );
+                
+                console.log('🎯 Search results found:', results.length);
+                
+                // Display results
+                if (results.length > 0) {
+                    displayVenueResults(results, `Search results for "${searchTerm}"`);
+                } else {
+                    alert(`No venues found matching "${searchTerm}"`);
+                }
+                
+            } catch (error) {
+                console.error('❌ Search error:', error);
+                alert('Search is currently unavailable. Please try again.');
             }
         }
         
@@ -885,92 +878,107 @@
         }
 
         async function loadVenuesForMap() {
+            console.log('🗺️ Loading venues for map...');
             try {
-                // Try to fetch from our API first
                 const response = await fetch('/venues?per_page=1000');
                 if (response.ok) {
                     const data = await response.json();
                     allVenues = data.venues || [];
+                    console.log('✅ Loaded venues for map:', allVenues.length);
                 } else {
-                    throw new Error('API not available');
+                    throw new Error(`API error: ${response.status}`);
                 }
             } catch (error) {
-                // Fallback to sample NYC venues with coordinates
+                console.error('❌ Error loading venues for map:', error);
+                // Fallback to sample venues
                 allVenues = [
                     { id: 1, name: "House of Yes", neighborhood: "Bushwick", venue_type: "nightclub", lat: 40.7053, lng: -73.9233 },
                     { id: 2, name: "Brooklyn Bowl", neighborhood: "Williamsburg", venue_type: "live_music_venue", lat: 40.7220, lng: -73.9575 },
-                    { id: 3, name: "Death & Co", neighborhood: "East Village", venue_type: "cocktail_bar", lat: 40.7259, lng: -73.9846 },
-                    { id: 4, name: "Le Bain", neighborhood: "Meatpacking", venue_type: "rooftop_bar", lat: 40.7411, lng: -74.0083 },
-                    { id: 5, name: "Output", neighborhood: "Williamsburg", venue_type: "nightclub", lat: 40.7223, lng: -73.9578 },
-                    { id: 6, name: "Beauty & Essex", neighborhood: "Lower East Side", venue_type: "cocktail_lounge", lat: 40.7204, lng: -73.9869 },
-                    { id: 7, name: "The Box", neighborhood: "Lower East Side", venue_type: "nightclub", lat: 40.7219, lng: -73.9923 },
-                    { id: 8, name: "Marquee", neighborhood: "Chelsea", venue_type: "nightclub", lat: 40.7501, lng: -74.0028 }
+                    { id: 3, name: "Death & Co", neighborhood: "East Village", venue_type: "cocktail_bar", lat: 40.7259, lng: -73.9846 }
                 ];
+                console.log('⚠️ Using fallback venues:', allVenues.length);
             }
 
             // Add markers to map
+            console.log('📍 Adding markers to map...');
             addMarkersToMap(allVenues);
         }
 
         function addMarkersToMap(venues) {
+            console.log('📍 addMarkersToMap called with venues:', venues.length);
+            
+            if (!map) {
+                console.error('❌ Map not initialized');
+                return;
+            }
+            
             // Clear existing markers
             markers.forEach(marker => marker.setMap(null));
             markers = [];
 
-            venues.forEach(venue => {
+            venues.forEach((venue, index) => {
+                console.log(`📍 Processing venue ${index + 1}:`, venue.name);
                 if (venue.lat && venue.lng) {
                     // Ensure coordinates are numbers
                     const lat = parseFloat(venue.lat);
                     const lng = parseFloat(venue.lng);
                     
-                    console.log('Adding marker for:', venue.name, 'at', {lat, lng});
+                    console.log(`  ✅ Has coordinates: lat=${lat}, lng=${lng}`);
                     
                     if (!isNaN(lat) && !isNaN(lng)) {
-                        const marker = new google.maps.Marker({
-                            position: { lat, lng },
-                            map: map,
-                            title: venue.name,
-                            icon: {
-                                url: getMarkerIcon(venue.venue_type),
-                                scaledSize: new google.maps.Size(35, 35),
-                                anchor: new google.maps.Point(17, 35)
-                            },
-                            zIndex: 100
-                        });
+                        try {
+                            const marker = new google.maps.Marker({
+                                position: { lat, lng },
+                                map: map,
+                                title: venue.name,
+                                icon: {
+                                    url: getMarkerIcon(venue.venue_type),
+                                    scaledSize: new google.maps.Size(35, 35),
+                                    anchor: new google.maps.Point(17, 35)
+                                },
+                                zIndex: 100
+                            });
 
-                        // Info window
-                        const infoWindow = new google.maps.InfoWindow({
-                        content: `
-                            <div style="max-width: 250px; padding: 10px;">
-                                <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${venue.name}</h3>
-                                <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
-                                    <strong>${formatVenueType(venue.venue_type)}</strong> • ${venue.neighborhood}
-                                </p>
-                                ${venue.address ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-weight: 500;">📍 ${venue.address}</p>` : ''}
-                                ${venue.description ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">${venue.description}</p>` : ''}
-                                ${venue.price_range ? `<p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Price:</strong> ${venue.price_range}</p>` : ''}
-                                ${venue.busy_nights ? `<p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
-                                        ${venue.instagram_handle ? `<a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
-                                   style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 13px; font-weight: 600;">
-                                    View on Instagram →
-                                </a>` : ''}
-                            </div>
-                        `
-                        });
+                            console.log(`  📍 Marker created successfully for ${venue.name}`);
 
-                        marker.addListener('click', () => {
-                            infoWindow.open(map, marker);
-                            trackEvent('map_marker_click', { venue_id: venue.id, venue_name: venue.name });
-                        });
+                            // Info window
+                            const infoWindow = new google.maps.InfoWindow({
+                            content: `
+                                <div style="max-width: 250px; padding: 10px;">
+                                    <h3 style="margin: 0 0 8px 0; color: #333; font-size: 18px;">${venue.name}</h3>
+                                    <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;">
+                                        <strong>${formatVenueType(venue.venue_type)}</strong> • ${venue.neighborhood}
+                                    </p>
+                                    ${venue.address ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; font-weight: 500;">📍 ${venue.address}</p>` : ''}
+                                    ${venue.description ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">${venue.description}</p>` : ''}
+                                    ${venue.price_range ? `<p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Price:</strong> ${venue.price_range}</p>` : ''}
+                                    ${venue.busy_nights ? `<p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
+                                            ${venue.instagram_handle ? `<a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
+                                       style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                                        View on Instagram →
+                                    </a>` : ''}
+                                </div>
+                            `
+                            });
 
-                        markers.push(marker);
+                            marker.addListener('click', () => {
+                                infoWindow.open(map, marker);
+                                trackEvent('map_marker_click', { venue_id: venue.id, venue_name: venue.name });
+                            });
+
+                            markers.push(marker);
+                        } catch (markerError) {
+                            console.error(`❌ Error creating marker for ${venue.name}:`, markerError);
+                        }
                     } else {
-                        console.warn('Invalid coordinates for venue:', venue.name, {lat, lng});
+                        console.warn(`⚠️ Invalid coordinates for venue: ${venue.name}, lat=${lat}, lng=${lng}`);
                     }
                 } else {
-                    console.warn('Venue missing coordinates:', venue.name);
+                    console.warn(`⚠️ Venue missing coordinates: ${venue.name}`);
                 }
             });
+            
+            console.log(`✅ Total markers created: ${markers.length}`);
         }
 
         function getMarkerIcon(venueType) {
