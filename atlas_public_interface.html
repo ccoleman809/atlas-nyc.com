@@ -547,6 +547,10 @@
                     <button class="map-control-btn" onclick="filterByType('rooftop')">🌆 Rooftops</button>
                     <button class="map-control-btn" onclick="filterByType('events')">🎉 Events</button>
                     <button class="map-control-btn" onclick="filterByType('culture')">🎭 Culture</button>
+                    <button class="map-control-btn" onclick="filterByType('dj')">🎧 DJs</button>
+                    <button class="map-control-btn" onclick="filterByType('cultural_organization')">🏛️ Cultural Orgs</button>
+                    <button class="map-control-btn" onclick="filterByType('recurring_event')">📅 Recurring Events</button>
+                    <button class="map-control-btn" onclick="filterByType('influencer')">📱 Influencers</button>
                     <button class="map-control-btn" onclick="centerOnUser()" style="background: linear-gradient(135deg, #00A86B, #32CD32);">📍 My Location</button>
                 </div>
             </div>
@@ -919,6 +923,10 @@
                 'events': getMarkerSVG('🎉', '#805AD5'),
                 'organization': getMarkerSVG('🏢', '#2D3748'),
                 'culture': getMarkerSVG('🎭', '#C53030'),
+                'dj': getMarkerSVG('🎧', '#FF6B6B'),
+                'cultural_organization': getMarkerSVG('🏛️', '#4ECDC4'),
+                'recurring_event': getMarkerSVG('📅', '#FFD93D'),
+                'influencer': getMarkerSVG('📱', '#FF006E'),
                 'misc': getMarkerSVG('⭐', '#718096')
             };
             return icons[venueType] || icons['misc'];

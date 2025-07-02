@@ -404,6 +404,10 @@
                         <option value="events">🎉 Events</option>
                         <option value="organization">🏢 Organization</option>
                         <option value="culture">🎭 Culture</option>
+                        <option value="dj">🎧 DJ</option>
+                        <option value="cultural_organization">🏛️ Cultural Organization</option>
+                        <option value="recurring_event">📅 Recurring Event</option>
+                        <option value="influencer">📱 Influencer</option>
                         <option value="misc">⭐ Miscellaneous</option>
                     </select>
                 </div>
@@ -690,7 +694,7 @@
         }
 
         async function importAllVenues() {
-            if (!confirm('This will restore ALL 80+ NYC venues including original Brooklyn/Queens spots. Continue?')) {
+            if (!confirm('This will import 100+ entries: venues, DJs, cultural orgs, events & influencers. Continue?')) {
                 return;
             }
 
