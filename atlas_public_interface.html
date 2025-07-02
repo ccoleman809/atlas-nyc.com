@@ -12,18 +12,18 @@
     <meta name="robots" content="index, follow">
     <meta name="googlebot" content="index, follow">
     
-    <!-- Canonical URL -->
-    <link rel="canonical" href="https://atlas-nyc.com/">
+    <!-- Canonical URL - Update with your actual domain -->
+    <link rel="canonical" href="/">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Atlas-NYC">
     <meta property="og:title" content="Atlas-NYC - Discover NYC's Hottest Nightlife Scene">
     <meta property="og:description" content="Discover NYC's hottest nightlife with Atlas-NYC. Find the best bars, clubs, lounges and events across Manhattan, Brooklyn, Queens and the Bronx.">
-    <meta property="og:image" content="https://atlas-nyc.com/static/og-homepage.jpg">
+    <meta property="og:image" content="/static/atlas-nyc-social.jpg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
-    <meta property="og:url" content="https://atlas-nyc.com/">
+    <meta property="og:url" content="/">
     <meta property="og:locale" content="en_US">
     
     <!-- Twitter -->
@@ -31,13 +31,13 @@
     <meta name="twitter:site" content="@atlasnyc">
     <meta name="twitter:title" content="Atlas-NYC - Discover NYC's Hottest Nightlife Scene">
     <meta name="twitter:description" content="Discover NYC's hottest nightlife with Atlas-NYC. Find the best bars, clubs, lounges and events across Manhattan, Brooklyn, Queens and the Bronx.">
-    <meta name="twitter:image" content="https://atlas-nyc.com/static/og-homepage.jpg">
+    <meta name="twitter:image" content="/static/atlas-nyc-social.jpg">
     
-    <!-- Favicons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
-    <link rel="manifest" href="/static/site.webmanifest">
+    <!-- Favicons - Comment out until files exist -->
+    <!-- <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png"> -->
+    <!-- <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png"> -->
+    <!-- <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png"> -->
+    <!-- <link rel="manifest" href="/static/site.webmanifest"> -->
     <meta name="theme-color" content="#000000">
     
     <!-- Preconnect for performance -->
@@ -53,18 +53,14 @@
         "@context": "https://schema.org",
         "@type": "Organization",
         "name": "Atlas-NYC",
-        "url": "https://atlas-nyc.com",
         "description": "NYC's premier nightlife discovery platform",
-        "logo": "https://atlas-nyc.com/static/logo.png",
         "contactPoint": {
             "@type": "ContactPoint",
             "contactType": "customer service",
-            "url": "https://atlas-nyc.com/contact"
+            "email": "info@atlas-nyc.com"
         },
         "sameAs": [
-            "https://twitter.com/atlasnyc",
-            "https://instagram.com/atlasnyc",
-            "https://facebook.com/atlasnyc"
+            "https://instagram.com/atlasnyc"
         ],
         "areaServed": {
             "@type": "City",
@@ -566,11 +562,10 @@
 
     <footer class="footer">
         <div class="footer-links">
-            <a href="/about">About</a>
-            <a href="/contact">Contact</a>
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
-            <a href="/sitemap.xml">Sitemap</a>
+            <a href="/admin">Admin</a>
+            <a href="/">Home</a>
+            <a href="mailto:info@atlas-nyc.com">Contact</a>
+            <a href="https://instagram.com/atlasnyc" target="_blank">Instagram</a>
         </div>
         <p>&copy; 2024 Atlas-NYC. All rights reserved. | NYC's Premier Nightlife Discovery Platform</p>
     </footer>
@@ -685,7 +680,8 @@
             // Add click tracking
             card.addEventListener('click', () => {
                 trackEvent('venue_click', { venue_id: venue.id, venue_name: venue.name });
-                window.location.href = `/venues/${venue.name.toLowerCase().replace(/\s+/g, '-')}-${venue.id}`;
+                // Instead of navigating to non-existent venue page, scroll to map
+                document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
             });
             
             return card;
@@ -878,10 +874,10 @@
                                 ${venue.description ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">${venue.description}</p>` : ''}
                                 ${venue.price_range ? `<p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Price:</strong> ${venue.price_range}</p>` : ''}
                                 ${venue.busy_nights ? `<p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
-                                <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
+                                ${venue.instagram_handle ? `<a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
                                    style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 13px; font-weight: 600;">
                                     View on Instagram →
-                                </a>
+                                </a>` : ''}
                             </div>
                         `
                         });
@@ -1006,9 +1002,9 @@
                         ${venue.description ? `<p style="font-size: 0.9rem; color: #666; margin: 0.5rem 0;">${venue.description}</p>` : ''}
                         ${venue.price_range ? `<p style="font-size: 0.9rem; margin: 0.5rem 0;">Price: ${venue.price_range}</p>` : ''}
                         ${venue.busy_nights ? `<p style="font-size: 0.9rem; margin: 0.5rem 0;">Busy nights: ${venue.busy_nights}</p>` : ''}
-                        <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" style="display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600;">
+                        ${venue.instagram_handle ? `<a href="https://instagram.com/${venue.instagram_handle}" target="_blank" style="display: inline-block; margin-top: 1rem; color: #667eea; text-decoration: none; font-weight: 600;">
                             @${venue.instagram_handle} →
-                        </a>
+                        </a>` : ''}
                     </div>
                 `;
                 
@@ -1085,10 +1081,10 @@
                                         ${venue.description ? `<p style="margin: 0 0 8px 0; font-size: 13px; color: #555; line-height: 1.4;">${venue.description}</p>` : ''}
                                         ${venue.price_range ? `<p style="margin: 0 0 5px 0; font-size: 13px;"><strong>Price:</strong> ${venue.price_range}</p>` : ''}
                                         ${venue.busy_nights ? `<p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Busy nights:</strong> ${venue.busy_nights}</p>` : ''}
-                                        <a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
+                                        ${venue.instagram_handle ? `<a href="https://instagram.com/${venue.instagram_handle}" target="_blank" 
                                            style="display: inline-block; margin-top: 10px; padding: 6px 12px; background: #667eea; color: white; text-decoration: none; border-radius: 20px; font-size: 13px; font-weight: 600;">
                                             View on Instagram →
-                                        </a>
+                                        </a>` : ''}
                                     </div>
                                 `
                             });
