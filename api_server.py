@@ -872,29 +872,33 @@ def initialize_ml_system():
         return False
 
 # Initialize ML system with Railway-friendly approach
-print("🔄 Initializing ML system for Railway deployment")
-ml_initialized = False
-ml_enhancer = None
-ml_discovery = None
-ml_manager = None
-moderation_system = None
-
-# Include basic ML endpoints first
-try:
-    from ml_basic import router as ml_router, moderation_router
-    app.include_router(ml_router)
-    app.include_router(moderation_router)
-    print("✅ Basic ML and moderation endpoints included")
-except Exception as e:
-    print(f"⚠️ Could not include basic ML endpoints: {e}")
-
-# Try to initialize full ML system after basic endpoints are loaded
-if os.environ.get("SKIP_ML_INIT") != "true":
+if not hasattr(app.state, "ml_initialized"):
+    print("🔄 Initializing ML system for Railway deployment")
+    ml_initialized = False
+    ml_enhancer = None
+    ml_discovery = None
+    ml_manager = None
+    moderation_system = None
+    
+    # Include basic ML endpoints first
     try:
-        ml_initialized = initialize_ml_system()
+        from ml_basic import router as ml_router, moderation_router
+        app.include_router(ml_router)
+        app.include_router(moderation_router)
+        print("✅ Basic ML and moderation endpoints included")
     except Exception as e:
-        print(f"⚠️ ML system initialization failed: {e}")
-        print("   Basic endpoints will remain available")
+        print(f"⚠️ Could not include basic ML endpoints: {e}")
+    
+    # Try to initialize full ML system after basic endpoints are loaded
+    if os.environ.get("SKIP_ML_INIT") != "true":
+        try:
+            ml_initialized = initialize_ml_system()
+        except Exception as e:
+            print(f"⚠️ ML system initialization failed: {e}")
+            print("   Basic endpoints will remain available")
+    
+    # Mark as initialized to prevent double initialization
+    app.state.ml_initialized = True
 
 @app.post("/api/ml/enhance-venue")
 async def enhance_venue_ml(request: VenueEnhanceRequest):
@@ -1319,11 +1323,13 @@ if __name__ == "__main__":
     print("🚀 Starting Atlas-NYC API server on Railway...")
     print(f"📊 Port: {port}")
     print(f"🌐 Environment: {os.environ.get('ENVIRONMENT', 'development')}")
+    print("📡 Starting Uvicorn server...")
     
     # Don't use reload in production
     uvicorn.run(
-        "api_server:app",  # Use string import for better compatibility
+        app,  # Pass the app object directly
         host=host, 
         port=port,
-        log_level="info"
+        log_level="info",
+        access_log=True
     )
