@@ -761,14 +761,25 @@ class MLDiscoveryRequest(BaseModel):
     search_terms: Optional[List[str]] = None
     max_results: Optional[int] = 10
 
+class ModerationRequest(BaseModel):
+    moderation_id: int
+    status: str  # 'approved', 'rejected', 'needs_revision'
+    feedback: Optional[str] = None
+    revision_notes: Optional[str] = None
+
+class BulkApprovalRequest(BaseModel):
+    content_type: Optional[str] = None
+    min_confidence: Optional[float] = 0.8
+
 # Global ML components (initialized on startup)
 ml_enhancer = None
 ml_discovery = None
 ml_manager = None
+moderation_system = None
 
 def initialize_ml_system():
     """Initialize ML components for production"""
-    global ml_enhancer, ml_discovery, ml_manager
+    global ml_enhancer, ml_discovery, ml_manager, moderation_system
     
     try:
         # Import ML components
@@ -779,10 +790,12 @@ def initialize_ml_system():
         from ml_system.smart_content_enhancer import SmartContentEnhancer
         from ml_system.automated_venue_discovery import AutomatedVenueDiscovery
         from ml_system.ml_models import MLModelManager
+        from ml_system.content_moderation import ContentModerationSystem
         
         ml_enhancer = SmartContentEnhancer()
         ml_discovery = AutomatedVenueDiscovery()
         ml_manager = MLModelManager()
+        moderation_system = ContentModerationSystem()
         
         print("✅ ML/AI system initialized successfully")
         return True
@@ -1001,10 +1014,180 @@ async def ml_health_check():
         "components": {
             "enhancer": ml_enhancer is not None,
             "discovery": ml_discovery is not None,
-            "insights": ml_manager is not None
+            "insights": ml_manager is not None,
+            "moderation": moderation_system is not None
         },
         "timestamp": datetime.now().isoformat()
     }
+
+# ==========================================
+# CONTENT MODERATION ENDPOINTS
+# ==========================================
+
+@app.get("/api/moderation/pending")
+async def get_pending_moderation():
+    """Get pending content moderation items"""
+    if not ml_initialized or moderation_system is None:
+        raise HTTPException(status_code=503, detail="Moderation system not available")
+    
+    try:
+        pending_items = moderation_system.get_pending_moderation_items()
+        
+        # Format for API response
+        formatted_items = []
+        for item in pending_items:
+            formatted_items.append({
+                "id": item.id,
+                "venue_id": item.venue_id,
+                "content_type": item.content_type.value,
+                "original_content": item.original_content,
+                "ai_generated_content": item.ai_generated_content,
+                "confidence_score": item.confidence_score,
+                "created_at": item.created_at,
+                "status": item.status.value
+            })
+        
+        return {
+            "status": "success",
+            "pending_items": formatted_items,
+            "count": len(formatted_items)
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving moderation items: {str(e)}")
+
+@app.post("/api/moderation/moderate")
+async def moderate_content(request: ModerationRequest):
+    """Approve or reject content moderation item"""
+    if not ml_initialized or moderation_system is None:
+        raise HTTPException(status_code=503, detail="Moderation system not available")
+    
+    try:
+        from ml_system.content_moderation import ModerationStatus
+        
+        # Map string to enum
+        status_map = {
+            'approved': ModerationStatus.APPROVED,
+            'rejected': ModerationStatus.REJECTED,
+            'needs_revision': ModerationStatus.NEEDS_REVISION
+        }
+        
+        if request.status not in status_map:
+            raise HTTPException(status_code=400, detail="Invalid moderation status")
+        
+        success = moderation_system.moderate_content(
+            moderation_id=request.moderation_id,
+            status=status_map[request.status],
+            admin_username="admin",  # In production, get from authentication
+            feedback=request.feedback,
+            revision_notes=request.revision_notes
+        )
+        
+        if success:
+            return {
+                "status": "success",
+                "message": f"Content {request.status} successfully",
+                "moderation_id": request.moderation_id
+            }
+        else:
+            raise HTTPException(status_code=404, detail="Moderation item not found")
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error processing moderation: {str(e)}")
+
+@app.post("/api/moderation/bulk-approve")
+async def bulk_approve_content(request: BulkApprovalRequest):
+    """Bulk approve high-confidence content"""
+    if not ml_initialized or moderation_system is None:
+        raise HTTPException(status_code=503, detail="Moderation system not available")
+    
+    try:
+        from ml_system.content_moderation import ContentType
+        
+        content_type = None
+        if request.content_type:
+            content_type_map = {
+                'venue_description': ContentType.VENUE_DESCRIPTION,
+                'atmosphere_tags': ContentType.ATMOSPHERE_TAGS,
+                'demographics': ContentType.DEMOGRAPHICS,
+                'discovery_result': ContentType.DISCOVERY_RESULT,
+                'enhancement': ContentType.ENHANCEMENT
+            }
+            content_type = content_type_map.get(request.content_type)
+        
+        approved_count = moderation_system.bulk_approve_by_criteria(
+            content_type=content_type,
+            min_confidence=request.min_confidence
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Approved {approved_count} items",
+            "approved_count": approved_count
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error bulk approving content: {str(e)}")
+
+@app.get("/api/moderation/stats")
+async def get_moderation_stats():
+    """Get content moderation statistics"""
+    if not ml_initialized or moderation_system is None:
+        raise HTTPException(status_code=503, detail="Moderation system not available")
+    
+    try:
+        stats = moderation_system.get_moderation_stats()
+        return {
+            "status": "success",
+            "stats": stats
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving moderation stats: {str(e)}")
+
+@app.get("/api/moderation/preferences")
+async def get_admin_preferences():
+    """Get admin content preferences"""
+    if not ml_initialized or moderation_system is None:
+        raise HTTPException(status_code=503, detail="Moderation system not available")
+    
+    try:
+        preferences = moderation_system.get_admin_preferences()
+        return {
+            "status": "success",
+            "preferences": preferences
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving preferences: {str(e)}")
+
+@app.post("/api/moderation/preferences")
+async def set_admin_preference(preference_type: str = Form(...), 
+                              preference_value: str = Form(...),
+                              examples: str = Form("[]"),
+                              weight: float = Form(1.0)):
+    """Set admin content preferences"""
+    if not ml_initialized or moderation_system is None:
+        raise HTTPException(status_code=503, detail="Moderation system not available")
+    
+    try:
+        import json
+        examples_list = json.loads(examples) if examples else []
+        
+        moderation_system.set_admin_preference(
+            preference_type=preference_type,
+            preference_value=preference_value,
+            examples=examples_list,
+            weight=weight
+        )
+        
+        return {
+            "status": "success",
+            "message": "Preference set successfully"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error setting preference: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
