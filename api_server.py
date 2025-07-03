@@ -749,6 +749,15 @@ async def calculate_distance_matrix(origins: str, destinations: str, mode: str =
 # ML/AI SYSTEM ENDPOINTS
 # ==========================================
 
+# Include basic ML endpoints that always work
+try:
+    from ml_basic import router as ml_router, moderation_router
+    app.include_router(ml_router)
+    app.include_router(moderation_router)
+    print("✅ Basic ML and moderation endpoints included")
+except Exception as e:
+    print(f"⚠️ Could not include basic ML endpoints: {e}")
+
 @app.get("/api/ml/basic-test")
 async def ml_basic_test():
     """Basic ML test endpoint"""
