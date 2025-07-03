@@ -795,146 +795,22 @@ class BulkApprovalRequest(BaseModel):
     content_type: Optional[str] = None
     min_confidence: Optional[float] = 0.8
 
-# Global ML components (initialized on startup)
+# Global ML components (will be initialized later)
 ml_enhancer = None
 ml_discovery = None
 ml_manager = None
 moderation_system = None
-
-def initialize_ml_system():
-    """Initialize ML components for production"""
-    global ml_enhancer, ml_discovery, ml_manager, moderation_system
-    
-    # Check if we're in production/Render environment
-    is_production = os.environ.get("RENDER") or os.environ.get("ENVIRONMENT") == "production"
-    
-    try:
-        # Import ML components
-        import sys
-        import os
-        sys.path.append(os.path.dirname(__file__))
-        
-        print("🔄 Attempting to initialize ML/AI system...")
-        
-        # Initialize moderation system first (minimal dependencies)
-        from ml_system.content_moderation import ContentModerationSystem
-        moderation_system = ContentModerationSystem()
-        print("✅ Content moderation system initialized")
-        
-        # Try to initialize other ML components
-        try:
-            from ml_system.smart_content_enhancer import SmartContentEnhancer
-            ml_enhancer = SmartContentEnhancer()
-            print("✅ Content enhancer initialized")
-        except Exception as e:
-            print(f"⚠️ Content enhancer failed: {e}")
-            ml_enhancer = None
-        
-        try:
-            from ml_system.automated_venue_discovery import AutomatedVenueDiscovery
-            ml_discovery = AutomatedVenueDiscovery()
-            print("✅ Venue discovery initialized")
-        except Exception as e:
-            print(f"⚠️ Venue discovery failed: {e}")
-            ml_discovery = None
-            
-        try:
-            from ml_system.ml_models import MLModelManager
-            ml_manager = MLModelManager()
-            print("✅ ML model manager initialized")
-        except Exception as e:
-            print(f"⚠️ ML model manager failed: {e}")
-            ml_manager = None
-        
-        # Return True if at least moderation system works
-        if moderation_system:
-            print("✅ ML/AI system partially initialized (moderation system ready)")
-            return True
-        else:
-            return False
-        
-    except Exception as e:
-        print(f"❌ Complete ML system initialization failed: {e}")
-        if is_production:
-            # In production, continue without ML rather than crash
-            print("   Production mode: API will continue without ML features")
-            import traceback
-            traceback.print_exc()
-        return False
-
-# Skip ML initialization for stable deployment - include basic endpoints instead
-print("🔄 Skipping complex ML initialization for stable deployment")
 ml_initialized = False
-ml_enhancer = None
-ml_discovery = None
-ml_manager = None
-moderation_system = None
 
-# Include basic ML endpoints that always work
-try:
-    from ml_basic import router as ml_router, moderation_router
-    app.include_router(ml_router)
-    app.include_router(moderation_router)
-    print("✅ Basic ML and moderation endpoints included")
-except Exception as e:
-    print(f"⚠️ Could not include basic ML endpoints: {e}")
+# Skip ML initialization for now to ensure API starts
+print("🔄 Skipping complex ML initialization for stable deployment")
+print("   Basic ML endpoints will be available via ml_basic.py")
 
-@app.post("/api/ml/enhance-venue")
-async def enhance_venue_ml(request: VenueEnhanceRequest):
-    """Enhance a venue with AI-generated content"""
-    if not ml_initialized or ml_enhancer is None:
-        raise HTTPException(status_code=503, detail="ML system not available")
-    
-    try:
-        venue_data = {
-            'id': request.venue_id,
-            'name': request.name,
-            'venue_type': request.venue_type,
-            'neighborhood': request.neighborhood,
-            'instagram_handle': request.instagram_handle
-        }
-        
-        enhancement = await ml_enhancer.enhance_venue(venue_data)
-        
-        # Update the venue in database with ML enhancements
-        try:
-            with sqlite3.connect(DATABASE_PATH) as conn:
-                cursor = conn.cursor()
-                cursor.execute('''
-                    UPDATE venues SET 
-                        ml_enhanced_description = ?,
-                        ml_atmosphere_tags = ?,
-                        ml_target_demographics = ?,
-                        ml_social_sentiment = ?,
-                        ml_popularity_trend = ?,
-                        ml_last_enhanced = CURRENT_TIMESTAMP
-                    WHERE id = ?
-                ''', (
-                    enhancement.enhanced_description,
-                    ','.join(enhancement.atmosphere_tags),
-                    ','.join(enhancement.target_demographics),
-                    enhancement.social_sentiment,
-                    enhancement.popularity_trend,
-                    request.venue_id
-                ))
-                conn.commit()
-        except Exception as db_error:
-            print(f"Database update error: {db_error}")
-        
-        return {
-            "status": "success",
-            "venue_id": request.venue_id,
-            "enhanced_description": enhancement.enhanced_description,
-            "key_features": enhancement.key_features,
-            "atmosphere_tags": enhancement.atmosphere_tags,
-            "target_demographics": enhancement.target_demographics,
-            "social_sentiment": enhancement.social_sentiment,
-            "popularity_trend": enhancement.popularity_trend,
-            "recommendations": enhancement.recommendations
-        }
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Enhancement failed: {str(e)}")
+# Temporarily disabled complex ML endpoints 
+# @app.post("/api/ml/enhance-venue")
+# async def enhance_venue_ml(request: VenueEnhanceRequest):
+#     """Enhance a venue with AI-generated content"""
+#     return {"status": "disabled", "message": "Complex ML endpoints temporarily disabled for stable deployment"}
 
 @app.post("/api/ml/discover-venues")
 async def discover_venues_ml(request: MLDiscoveryRequest):
