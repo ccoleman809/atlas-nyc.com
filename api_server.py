@@ -749,6 +749,21 @@ async def calculate_distance_matrix(origins: str, destinations: str, mode: str =
 # ML/AI SYSTEM ENDPOINTS
 # ==========================================
 
+@app.get("/api/ml/basic-test")
+async def ml_basic_test():
+    """Basic ML test endpoint"""
+    return {
+        "message": "ML endpoints are working",
+        "timestamp": datetime.now().isoformat(),
+        "ml_initialized": ml_initialized,
+        "components_available": {
+            "enhancer": ml_enhancer is not None,
+            "discovery": ml_discovery is not None,
+            "manager": ml_manager is not None,
+            "moderation": moderation_system is not None
+        }
+    }
+
 # ML System Models
 class VenueEnhanceRequest(BaseModel):
     venue_id: str
@@ -838,8 +853,17 @@ def initialize_ml_system():
             traceback.print_exc()
         return False
 
-# Initialize ML system on startup
-ml_initialized = initialize_ml_system()
+# Initialize ML system on startup - but don't let it crash the API
+try:
+    ml_initialized = initialize_ml_system()
+except Exception as e:
+    print(f"❌ Critical ML initialization error: {e}")
+    print("   Starting API without ML system")
+    ml_initialized = False
+    ml_enhancer = None
+    ml_discovery = None
+    ml_manager = None
+    moderation_system = None
 
 @app.post("/api/ml/enhance-venue")
 async def enhance_venue_ml(request: VenueEnhanceRequest):
