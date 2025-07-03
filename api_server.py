@@ -781,28 +781,61 @@ def initialize_ml_system():
     """Initialize ML components for production"""
     global ml_enhancer, ml_discovery, ml_manager, moderation_system
     
+    # Check if we're in production/Render environment
+    is_production = os.environ.get("RENDER") or os.environ.get("ENVIRONMENT") == "production"
+    
     try:
         # Import ML components
         import sys
         import os
         sys.path.append(os.path.dirname(__file__))
         
-        from ml_system.smart_content_enhancer import SmartContentEnhancer
-        from ml_system.automated_venue_discovery import AutomatedVenueDiscovery
-        from ml_system.ml_models import MLModelManager
+        print("🔄 Attempting to initialize ML/AI system...")
+        
+        # Initialize moderation system first (minimal dependencies)
         from ml_system.content_moderation import ContentModerationSystem
-        
-        ml_enhancer = SmartContentEnhancer()
-        ml_discovery = AutomatedVenueDiscovery()
-        ml_manager = MLModelManager()
         moderation_system = ContentModerationSystem()
+        print("✅ Content moderation system initialized")
         
-        print("✅ ML/AI system initialized successfully")
-        return True
+        # Try to initialize other ML components
+        try:
+            from ml_system.smart_content_enhancer import SmartContentEnhancer
+            ml_enhancer = SmartContentEnhancer()
+            print("✅ Content enhancer initialized")
+        except Exception as e:
+            print(f"⚠️ Content enhancer failed: {e}")
+            ml_enhancer = None
+        
+        try:
+            from ml_system.automated_venue_discovery import AutomatedVenueDiscovery
+            ml_discovery = AutomatedVenueDiscovery()
+            print("✅ Venue discovery initialized")
+        except Exception as e:
+            print(f"⚠️ Venue discovery failed: {e}")
+            ml_discovery = None
+            
+        try:
+            from ml_system.ml_models import MLModelManager
+            ml_manager = MLModelManager()
+            print("✅ ML model manager initialized")
+        except Exception as e:
+            print(f"⚠️ ML model manager failed: {e}")
+            ml_manager = None
+        
+        # Return True if at least moderation system works
+        if moderation_system:
+            print("✅ ML/AI system partially initialized (moderation system ready)")
+            return True
+        else:
+            return False
         
     except Exception as e:
-        print(f"⚠️ ML system initialization failed: {e}")
-        print("   API will work without ML features")
+        print(f"❌ Complete ML system initialization failed: {e}")
+        if is_production:
+            # In production, continue without ML rather than crash
+            print("   Production mode: API will continue without ML features")
+            import traceback
+            traceback.print_exc()
         return False
 
 # Initialize ML system on startup
@@ -1020,6 +1053,27 @@ async def ml_health_check():
         "timestamp": datetime.now().isoformat()
     }
 
+@app.get("/api/ml/status")
+async def ml_simple_status():
+    """Simple ML status endpoint that always works"""
+    try:
+        return {
+            "ml_available": ml_initialized,
+            "moderation_available": moderation_system is not None,
+            "enhancer_available": ml_enhancer is not None,
+            "discovery_available": ml_discovery is not None,
+            "manager_available": ml_manager is not None,
+            "timestamp": datetime.now().isoformat(),
+            "message": "ML system operational" if ml_initialized else "ML system initializing or unavailable"
+        }
+    except Exception as e:
+        return {
+            "ml_available": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat(),
+            "message": "ML status check failed"
+        }
+
 # ==========================================
 # CONTENT MODERATION ENDPOINTS
 # ==========================================
@@ -1027,8 +1081,13 @@ async def ml_health_check():
 @app.get("/api/moderation/pending")
 async def get_pending_moderation():
     """Get pending content moderation items"""
-    if not ml_initialized or moderation_system is None:
-        raise HTTPException(status_code=503, detail="Moderation system not available")
+    if moderation_system is None:
+        return {
+            "status": "unavailable",
+            "message": "Moderation system not initialized",
+            "pending_items": [],
+            "count": 0
+        }
     
     try:
         pending_items = moderation_system.get_pending_moderation_items()
@@ -1054,7 +1113,12 @@ async def get_pending_moderation():
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving moderation items: {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Error retrieving moderation items: {str(e)}",
+            "pending_items": [],
+            "count": 0
+        }
 
 @app.post("/api/moderation/moderate")
 async def moderate_content(request: ModerationRequest):
