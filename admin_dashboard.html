@@ -183,6 +183,7 @@
             <button class="tab active" onclick="switchTab('venues')">Venues</button>
             <button class="tab" onclick="switchTab('content')">Content</button>
             <button class="tab" onclick="switchTab('analytics')">Analytics</button>
+            <button class="tab" onclick="switchTab('ml-system')">🤖 AI/ML</button>
             <button class="tab" onclick="switchTab('audit')">Audit Log</button>
         </div>
 
@@ -360,6 +361,64 @@
                     </div>
                     <button type="submit" class="btn btn-primary">Export CSV</button>
                 </form>
+            </div>
+        </div>
+
+        <!-- ML/AI System Section -->
+        <div id="ml-system-section" class="content-section">
+            <div class="card">
+                <h3>🤖 AI/ML System Control Panel</h3>
+                
+                <!-- System Status -->
+                <div id="ml-status" style="margin-bottom: 2rem;">
+                    <h4>System Status</h4>
+                    <div id="ml-status-content">
+                        <p>Loading ML system status...</p>
+                    </div>
+                </div>
+                
+                <!-- ML Actions -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <h4>🎨 Venue Enhancement</h4>
+                        <p>AI-enhance venue descriptions and metadata</p>
+                        <button onclick="enhanceAllVenues()" class="btn btn-primary" style="margin-top: 0.5rem;">
+                            Enhance All Venues
+                        </button>
+                        <button onclick="enhanceSelectedVenue()" class="btn btn-secondary" style="margin-top: 0.5rem;">
+                            Enhance Selected
+                        </button>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <h4>🔍 Venue Discovery</h4>
+                        <p>Discover new venues automatically</p>
+                        <button onclick="runVenueDiscovery()" class="btn btn-primary" style="margin-top: 0.5rem;">
+                            Discover New Venues
+                        </button>
+                        <button onclick="viewDiscoveryHistory()" class="btn btn-secondary" style="margin-top: 0.5rem;">
+                            View History
+                        </button>
+                    </div>
+                    
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px;">
+                        <h4>📊 ML Analytics</h4>
+                        <p>View ML performance and insights</p>
+                        <button onclick="viewMLAnalytics()" class="btn btn-primary" style="margin-top: 0.5rem;">
+                            View Analytics
+                        </button>
+                        <button onclick="exportMLData()" class="btn btn-secondary" style="margin-top: 0.5rem;">
+                            Export Data
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Results Area -->
+                <div id="ml-results" style="display: none;">
+                    <h4>Results</h4>
+                    <div id="ml-results-content" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -918,6 +977,199 @@
                 loadRealtimeStats();
             }
         }, 30000);
+
+        // ML/AI System Functions
+        async function checkMLSystemStatus() {
+            try {
+                const response = await fetch('/api/ml/health');
+                const status = await response.json();
+                
+                const statusHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div style="background: ${status.status === 'healthy' ? '#d4edda' : '#f8d7da'}; padding: 0.75rem; border-radius: 4px;">
+                            <strong>System Status:</strong> ${status.status}
+                        </div>
+                        <div style="background: ${status.components.enhancer ? '#d4edda' : '#f8d7da'}; padding: 0.75rem; border-radius: 4px;">
+                            <strong>Enhancer:</strong> ${status.components.enhancer ? 'Active' : 'Inactive'}
+                        </div>
+                        <div style="background: ${status.components.discovery ? '#d4edda' : '#f8d7da'}; padding: 0.75rem; border-radius: 4px;">
+                            <strong>Discovery:</strong> ${status.components.discovery ? 'Active' : 'Inactive'}
+                        </div>
+                        <div style="background: ${status.components.insights ? '#d4edda' : '#f8d7da'}; padding: 0.75rem; border-radius: 4px;">
+                            <strong>Insights:</strong> ${status.components.insights ? 'Active' : 'Inactive'}
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('ml-status-content').innerHTML = statusHTML;
+                
+            } catch (error) {
+                document.getElementById('ml-status-content').innerHTML = 
+                    '<p style="color: #dc3545;">Error connecting to ML system</p>';
+            }
+        }
+
+        async function enhanceAllVenues() {
+            showMLStatus('Enhancing all venues with AI...');
+            
+            try {
+                const venuesResponse = await fetch('/api/venues');
+                const venues = await venuesResponse.json();
+                
+                let enhanced = 0;
+                let errors = 0;
+                
+                for (const venue of venues) {
+                    try {
+                        const response = await fetch('/api/ml/enhance-venue', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                venue_id: venue.id.toString(),
+                                name: venue.name,
+                                venue_type: venue.venue_type,
+                                neighborhood: venue.neighborhood,
+                                instagram_handle: venue.instagram_handle
+                            })
+                        });
+                        
+                        if (response.ok) {
+                            enhanced++;
+                            showMLStatus(`Enhanced ${enhanced}/${venues.length} venues...`);
+                        } else {
+                            errors++;
+                        }
+                        
+                    } catch (error) {
+                        errors++;
+                    }
+                }
+                
+                showMLResults(`
+                    <h5>Enhancement Complete!</h5>
+                    <p><strong>Enhanced:</strong> ${enhanced} venues</p>
+                    <p><strong>Errors:</strong> ${errors} venues</p>
+                    <p>Refresh the venues list to see AI-enhanced descriptions.</p>
+                `);
+                
+                loadVenues();
+                
+            } catch (error) {
+                showMLResults(`<p style="color: #dc3545;">Enhancement failed: ${error.message}</p>`);
+            }
+        }
+
+        async function runVenueDiscovery() {
+            showMLStatus('Discovering new venues...');
+            
+            try {
+                const response = await fetch('/api/ml/discover-venues', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        search_terms: ['brooklyn nightlife', 'manhattan bars', 'nyc cultural centers'],
+                        max_results: 20
+                    })
+                });
+                
+                const result = await response.json();
+                
+                showMLResults(`
+                    <h5>Discovery Results</h5>
+                    <p><strong>Total Found:</strong> ${result.total_found}</p>
+                    <p><strong>Added:</strong> ${result.added}</p>
+                    <p><strong>Duplicates:</strong> ${result.duplicates}</p>
+                    <p><strong>Rejected:</strong> ${result.rejected}</p>
+                    
+                    <h6>Sample Discovered Venues:</h6>
+                    ${result.discovered_venues.map(venue => `
+                        <div style="border: 1px solid #ddd; padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px;">
+                            <strong>${venue.name}</strong><br>
+                            <small>${venue.address} | Type: ${venue.venue_type} | Score: ${venue.confidence_score}</small>
+                        </div>
+                    `).join('')}
+                `);
+                
+                loadVenues();
+                
+            } catch (error) {
+                showMLResults(`<p style="color: #dc3545;">Discovery failed: ${error.message}</p>`);
+            }
+        }
+
+        async function viewMLAnalytics() {
+            showMLStatus('Loading ML analytics...');
+            
+            try {
+                const response = await fetch('/api/ml/analytics');
+                const analytics = await response.json();
+                
+                showMLResults(`
+                    <h5>ML System Analytics</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1rem 0;">
+                        <div style="background: #e7f3ff; padding: 1rem; border-radius: 4px;">
+                            <strong>Enhanced Venues</strong><br>
+                            <span style="font-size: 1.5rem; color: #0066cc;">${analytics.venues_enhanced || 0}</span>
+                        </div>
+                        <div style="background: #e7f3ff; padding: 1rem; border-radius: 4px;">
+                            <strong>Auto-Discovered</strong><br>
+                            <span style="font-size: 1.5rem; color: #0066cc;">${analytics.venues_auto_discovered || 0}</span>
+                        </div>
+                        <div style="background: #e7f3ff; padding: 1rem; border-radius: 4px;">
+                            <strong>System Status</strong><br>
+                            <span style="color: ${analytics.ml_system_active ? 'green' : 'red'};">
+                                ${analytics.ml_system_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <h6>Venue Type Distribution:</h6>
+                    ${Object.entries(analytics.venue_type_distribution || {}).map(([type, count]) => `
+                        <div style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px solid #eee;">
+                            <span>${type.replace('_', ' ')}</span>
+                            <strong>${count}</strong>
+                        </div>
+                    `).join('')}
+                `);
+                
+            } catch (error) {
+                showMLResults(`<p style="color: #dc3545;">Analytics failed: ${error.message}</p>`);
+            }
+        }
+
+        function enhanceSelectedVenue() {
+            const selectedVenue = prompt('Enter venue ID to enhance:');
+            if (selectedVenue) {
+                showMLResults(`<p>Feature coming soon: Enhance venue ID ${selectedVenue}</p>`);
+            }
+        }
+
+        function viewDiscoveryHistory() {
+            showMLResults(`<p>Discovery history feature coming soon...</p>`);
+        }
+
+        function exportMLData() {
+            showMLResults(`<p>ML data export feature coming soon...</p>`);
+        }
+
+        function showMLStatus(message) {
+            document.getElementById('ml-status-content').innerHTML = 
+                `<p style="color: #007bff;"><em>${message}</em></p>`;
+        }
+
+        function showMLResults(html) {
+            document.getElementById('ml-results-content').innerHTML = html;
+            document.getElementById('ml-results').style.display = 'block';
+        }
+
+        // Override switchTab to load ML status when ML tab is opened
+        const originalSwitchTab = switchTab;
+        switchTab = function(tabName) {
+            originalSwitchTab(tabName);
+            if (tabName === 'ml-system') {
+                checkMLSystemStatus();
+            }
+        };
 
         // Initialize on load
         init();

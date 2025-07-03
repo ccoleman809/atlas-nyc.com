@@ -35,3 +35,9 @@ sentry-sdk[fastapi]==1.38.0
 pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.25.2
+
+# ML/AI System Dependencies
+scikit-learn==1.7.0
+pandas==2.3.0
+numpy==2.3.1
+aiohttp==3.12.13

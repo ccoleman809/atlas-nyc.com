@@ -1,0 +1,51 @@
+{
+  "database": {
+    "main_db_path": "/Users/cecilcoleman/nyc-nightlife-api/nyc-nightlife-api/nightlife_project/ml_system/nightlife.db",
+    "backup_enabled": true,
+    "backup_interval_hours": 24
+  },
+  "api_keys": {
+    "google_places": "",
+    "yelp": "",
+    "foursquare": "",
+    "instagram": ""
+  },
+  "discovery": {
+    "default_search_terms": [
+      "brooklyn nightlife venues",
+      "manhattan bars clubs",
+      "queens music venues",
+      "nyc art galleries",
+      "brooklyn theaters",
+      "rooftop bars nyc",
+      "speakeasy bars nyc"
+    ],
+    "quality_threshold": 0.6,
+    "max_results_per_source": 50,
+    "rate_limit_requests_per_minute": 100,
+    "duplicate_detection_enabled": true
+  },
+  "enhancement": {
+    "auto_enhance_new_venues": true,
+    "social_analysis_enabled": true,
+    "description_generation_enabled": true,
+    "recommendation_generation_enabled": true
+  },
+  "ml_models": {
+    "model_directory": "ml_system/models/",
+    "auto_retrain_enabled": false,
+    "retrain_interval_days": 30,
+    "confidence_threshold": 0.7
+  },
+  "scheduling": {
+    "auto_discovery_enabled": false,
+    "discovery_interval_hours": 168,
+    "enhancement_interval_hours": 24,
+    "cleanup_old_predictions_days": 30
+  },
+  "logging": {
+    "log_level": "INFO",
+    "log_file": "ml_system/logs/ml_system.log",
+    "max_log_file_size_mb": 10
+  }
+}

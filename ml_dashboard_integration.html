@@ -1,0 +1,162 @@
+
+<!-- Add this to your admin_dashboard.html -->
+
+<div class="ml-system-section">
+    <h3>🤖 ML/AI System</h3>
+    
+    <div class="ml-controls">
+        <button onclick="runVenueDiscovery()" class="btn btn-primary">
+            🔍 Discover New Venues
+        </button>
+        
+        <button onclick="enhanceAllVenues()" class="btn btn-secondary">
+            ✨ Enhance All Venues
+        </button>
+        
+        <button onclick="viewMLAnalytics()" class="btn btn-info">
+            📊 View ML Analytics
+        </button>
+    </div>
+    
+    <div id="ml-status" class="status-panel">
+        <h4>System Status</h4>
+        <div id="ml-status-content">Loading...</div>
+    </div>
+    
+    <div id="discovery-results" class="results-panel" style="display: none;">
+        <h4>Discovery Results</h4>
+        <div id="discovery-content"></div>
+    </div>
+</div>
+
+<script>
+// ML System JavaScript Functions
+
+async function runVenueDiscovery() {
+    showStatus('Running venue discovery...');
+    
+    try {
+        const response = await fetch('/api/ml/discover-venues', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                search_terms: [
+                    'brooklyn nightlife',
+                    'manhattan bars',
+                    'nyc music venues'
+                ]
+            })
+        });
+        
+        const result = await response.json();
+        showDiscoveryResults(result);
+        
+    } catch (error) {
+        showStatus('Discovery failed: ' + error.message);
+    }
+}
+
+async function enhanceAllVenues() {
+    showStatus('Enhancing venues with AI...');
+    
+    try {
+        // Get list of venues that need enhancement
+        const venues = await fetch('/api/venues').then(r => r.json());
+        
+        for (const venue of venues) {
+            await fetch(`/api/ml/enhance-venue/${venue.id}`, {
+                method: 'POST'
+            });
+        }
+        
+        showStatus('All venues enhanced successfully!');
+        location.reload(); // Refresh to show updates
+        
+    } catch (error) {
+        showStatus('Enhancement failed: ' + error.message);
+    }
+}
+
+async function viewMLAnalytics() {
+    try {
+        const response = await fetch('/api/ml/analytics');
+        const analytics = await response.json();
+        
+        showAnalytics(analytics);
+        
+    } catch (error) {
+        showStatus('Failed to load analytics: ' + error.message);
+    }
+}
+
+function showStatus(message) {
+    document.getElementById('ml-status-content').innerHTML = 
+        `<p>${new Date().toLocaleTimeString()}: ${message}</p>`;
+}
+
+function showDiscoveryResults(result) {
+    const content = `
+        <p><strong>Total Found:</strong> ${result.results.total_found}</p>
+        <p><strong>Added:</strong> ${result.results.added}</p>
+        <p><strong>Duplicates:</strong> ${result.results.duplicates}</p>
+        <p><strong>Rejected:</strong> ${result.results.rejected}</p>
+    `;
+    
+    document.getElementById('discovery-content').innerHTML = content;
+    document.getElementById('discovery-results').style.display = 'block';
+}
+
+function showAnalytics(analytics) {
+    // Create analytics display
+    const analyticsWindow = window.open('', '_blank');
+    analyticsWindow.document.write(`
+        <html>
+        <head><title>ML Analytics</title></head>
+        <body>
+        <h1>ML System Analytics</h1>
+        <pre>${JSON.stringify(analytics, null, 2)}</pre>
+        </body>
+        </html>
+    `);
+}
+
+// Load ML system status on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        const response = await fetch('/api/ml/health');
+        const health = await response.json();
+        
+        showStatus('ML System: ' + health.status);
+        
+    } catch (error) {
+        showStatus('ML System: Offline');
+    }
+});
+</script>
+
+<style>
+.ml-system-section {
+    border: 1px solid #ddd;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.ml-controls {
+    margin-bottom: 20px;
+}
+
+.ml-controls button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+}
+
+.status-panel, .results-panel {
+    background: white;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 4px;
+}
+</style>
