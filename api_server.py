@@ -92,7 +92,16 @@ class ErrorResponse(BaseModel):
 db = VenueDatabase()
 
 # Initialize Google Maps client
-gmaps = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY) if settings.GOOGLE_MAPS_API_KEY else None
+try:
+    if settings.GOOGLE_MAPS_API_KEY and settings.GOOGLE_MAPS_API_KEY != "your_google_maps_api_key_here":
+        gmaps = googlemaps.Client(key=settings.GOOGLE_MAPS_API_KEY)
+        print("✅ Google Maps client initialized")
+    else:
+        gmaps = None
+        print("⚠️ Google Maps API key not configured - map features disabled")
+except Exception as e:
+    gmaps = None
+    print(f"⚠️ Google Maps initialization failed: {e} - map features disabled")
 
 class ContentDatabase:
     def __init__(self, db_path: str = "nightlife.db"):
