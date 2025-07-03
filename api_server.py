@@ -1303,14 +1303,18 @@ if __name__ == "__main__":
     import uvicorn
     import os
     
-    port = int(os.environ.get("PORT", 8002))
+    # Railway provides PORT env var
+    port = int(os.environ.get("PORT", 8000))
     host = "0.0.0.0"
     
-    print("🚀 Starting Atlas-NYC API server (v1.0)...")
-    print(f"📱 API available at: http://{host}:{port}")
-    print(f"🌐 Mobile portal at: http://{host}:{port}/mobile")
-    print(f"📰 Public interface at: http://{host}:{port}/public")
-    print(f"🔗 API docs available at: http://{host}:{port}/docs")
-    print(f"📊 Health check at: http://{host}:{port}/health")
+    print("🚀 Starting Atlas-NYC API server on Railway...")
+    print(f"📊 Port: {port}")
+    print(f"🌐 Environment: {os.environ.get('ENVIRONMENT', 'development')}")
     
-    uvicorn.run(app, host=host, port=port)
+    # Don't use reload in production
+    uvicorn.run(
+        "api_server:app",  # Use string import for better compatibility
+        host=host, 
+        port=port,
+        log_level="info"
+    )
