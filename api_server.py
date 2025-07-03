@@ -862,15 +862,15 @@ def initialize_ml_system():
             traceback.print_exc()
         return False
 
-# Skip ML initialization for stable deployment - include basic endpoints instead
-print("🔄 Skipping complex ML initialization for stable deployment")
+# Initialize ML system with Railway-friendly approach
+print("🔄 Initializing ML system for Railway deployment")
 ml_initialized = False
 ml_enhancer = None
 ml_discovery = None
 ml_manager = None
 moderation_system = None
 
-# Include basic ML endpoints that always work
+# Include basic ML endpoints first
 try:
     from ml_basic import router as ml_router, moderation_router
     app.include_router(ml_router)
@@ -878,6 +878,14 @@ try:
     print("✅ Basic ML and moderation endpoints included")
 except Exception as e:
     print(f"⚠️ Could not include basic ML endpoints: {e}")
+
+# Try to initialize full ML system after basic endpoints are loaded
+if os.environ.get("SKIP_ML_INIT") != "true":
+    try:
+        ml_initialized = initialize_ml_system()
+    except Exception as e:
+        print(f"⚠️ ML system initialization failed: {e}")
+        print("   Basic endpoints will remain available")
 
 @app.post("/api/ml/enhance-venue")
 async def enhance_venue_ml(request: VenueEnhanceRequest):
